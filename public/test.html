@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Environment Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(34, 197, 94, 0.3); }
+        .error { background: rgba(239, 68, 68, 0.3); }
+        .info { background: rgba(59, 130, 246, 0.3); }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Environment Check</h1>
+        
+        <div id="status" class="status info">Checking test environment...</div>
+        
+        <h2>Test Controls</h2>
+        <button onclick="checkEnvironment()">Check Environment</button>
+        <button onclick="checkAuth()">Check Authentication</button>
+        <button onclick="initializeTestData()">Initialize Test Data</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+        
+        <h2>Results</h2>
+        <pre id="results">Click a button to see results...</pre>
+        
+        <h2>Next Steps</h2>
+        <div class="info status">
+            <p><strong>If everything is working:</strong></p>
+            <ol>
+                <li>Go to <a href="/" style="color: #93c5fd;">http://localhost:3000</a></li>
+                <li>Look for the yellow "TEST MODE" indicator</li>
+                <li>You should be automatically logged in as Test User</li>
+                <li>Click "Show Test Controls" to manage test data</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        async function checkEnvironment() {
+            try {
+                const response = await fetch('/api/test-env');
+                const data = await response.json();
+                document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = 'Environment check completed successfully!';
+            } catch (error) {
+                document.getElementById('results').textContent = `Error: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = 'Environment check failed!';
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/test-auth');
+                const data = await response.json();
+                document.getElementById('results').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = 'Authentication check completed!';
+            } catch (error) {
+                document.getElementById('results').textContent = `Error: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = 'Authentication check failed!';
+            }
+        }
+
+        async function initializeTestData() {
+            try {
+                document.getElementById('status').className = 'status info';
+                document.getElementById('status').textContent = 'Initializing test data...';
+                
+                // This would normally be done through the TestEnvironment component
+                document.getElementById('results').textContent = 'Test data initialization should happen automatically when you visit the main app in test mode.';
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = 'Test data initialization info displayed!';
+            } catch (error) {
+                document.getElementById('results').textContent = `Error: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = 'Test data initialization failed!';
+            }
+        }
+
+        async function clearTestData() {
+            try {
+                document.getElementById('status').className = 'status info';
+                document.getElementById('status').textContent = 'Clearing test data...';
+                
+                document.getElementById('results').textContent = 'Test data clearing should be done through the TestEnvironment component in the main app.';
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = 'Test data clearing info displayed!';
+            } catch (error) {
+                document.getElementById('results').textContent = `Error: ${error.message}`;
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = 'Test data clearing failed!';
+            }
+        }
+
+        // Auto-check environment on page load
+        window.onload = function() {
+            checkEnvironment();
+        };
+    </script>
+</body>
+</html> 

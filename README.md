@@ -1,70 +1,186 @@
-# Getting Started with Create React App
+# Ordinary Gentlemen - FPL League
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern Fantasy Premier League application built with Next.js, featuring real-time predictions, league standings, and comprehensive statistics.
 
-## Available Scripts
+## 🚀 Tech Stack
 
-In the project directory, you can run:
+### Frontend UI Layer
+- **Framework**: Next.js 14 (React + Routing + SSR)
+- **Styling**: Tailwind CSS
+- **Components**: Headless UI for accessible components
+- **Icons**: Heroicons
 
-### `npm start`
+### Authentication Layer
+- **Service**: Firebase Authentication
+- **Method**: Google Sign-In only (OAuth 2.0)
+- **Hooks**: react-firebase-hooks for session handling
+- **Output**: UID, email, displayName
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Local Data Layer
+- **Local DB**: Dexie.js (IndexedDB wrapper)
+- **Usage**: Store Score & Strike predictions, user info, gameweek summaries
+- **Schema**: Tables for predictions, users, gameweek summaries, league standings
+- **Querying**: Indexed fields, async CRUD operations
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Data API Layer
+- **Source**: Fantasy Premier League (FPL) API
+- **Fetch Tool**: Axios with caching
+- **Data**: League standings, team data, chips, gameweeks
+- **Refresh**: Weekly or on-demand
 
-### `npm test`
+### Deployment Layer
+- **Host**: Vercel (preferred for Next.js)
+- **Domain**: Custom or Vercel subdomain
+- **SSL**: Automatic
+- **CI/CD**: GitHub → Vercel auto-deploy
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Setup Instructions
 
-### `npm run build`
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Firebase project with Authentication enabled
+- Google OAuth credentials
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ordinary-gentlemen
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### `npm run eject`
+3. **Environment Setup**
+   Create a `.env.local` file in the root directory:
+   ```env
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+4. **Firebase Configuration**
+   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+   - Enable Google Authentication
+   - Create a Firestore database
+   - Add your domain to authorized domains
+   - Create a `whitelist` collection in Firestore with user emails as documents
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## 📁 Project Structure
 
-## Learn More
+```
+ordinary-gentlemen/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx         # Root layout
+│   ├── page.tsx           # Main page
+│   └── globals.css        # Global styles
+├── components/            # React components
+│   ├── LoginPage.tsx      # Authentication page
+│   ├── Dashboard.tsx      # Main dashboard
+│   └── tabs/              # Tab components
+│       ├── NewsTab.tsx
+│       ├── StandingsTab.tsx
+│       ├── ScoreStrikeTab.tsx
+│       └── StatisticsTab.tsx
+├── contexts/              # React contexts
+│   └── AuthContext.tsx    # Authentication context
+├── lib/                   # Utility libraries
+│   ├── firebase.ts        # Firebase configuration
+│   ├── database.ts        # Dexie.js database
+│   └── fpl-api.ts         # FPL API service
+├── public/                # Static assets
+└── package.json           # Dependencies and scripts
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🔧 Available Scripts
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
 
-### Code Splitting
+## 🎯 Features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Authentication
+- Google OAuth integration
+- Whitelist-based access control
+- Persistent session management
 
-### Analyzing the Bundle Size
+### Dashboard
+- **Latest News**: Football news and updates
+- **League Standing**: Real-time FPL table
+- **Score n Strike**: Match prediction game
+- **Statistics**: Personal and league statistics
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Local Storage
+- Offline-capable predictions
+- User data persistence
+- Gameweek summaries
+- League standings cache
 
-### Making a Progressive Web App
+### Real-time Updates
+- Live match status
+- Prediction deadlines
+- League position updates
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 🚀 Deployment
 
-### Advanced Configuration
+### Vercel Deployment
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Environment Variables for Production
+Ensure all Firebase configuration variables are set in your deployment platform.
 
-### Deployment
+## 🔒 Security
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+- Firebase Authentication with Google OAuth
+- Firestore security rules
+- Client-side data validation
+- CORS configuration for API calls
 
-### `npm run build` fails to minify
+## 📱 Responsive Design
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The application is fully responsive and optimized for:
+- Desktop (1200px+)
+- Tablet (768px - 1199px)
+- Mobile (320px - 767px)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the Firebase documentation for authentication issues
+
+---
+
+**Built with ❤️ for the Ordinary Gentlemen FPL League**
