@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"lib/fpl-api.ts -> ./database\":{\"id\":\"lib/fpl-api.ts -> ./database\",\"files\":[]}}"
