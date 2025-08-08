@@ -4,22 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:test": "NEXT_PUBLIC_TEST_MODE=true NEXT_PUBLIC_MOCK_API=true next dev",
-    "dev:staging": "NODE_ENV=staging next dev",
+    "dev:test": "NODE_ENV=test NEXT_PUBLIC_TEST_MODE=true next dev",
     "build": "next build",
     "build:test": "NODE_ENV=test NEXT_PUBLIC_TEST_MODE=true next build",
-    "build:staging": "NODE_ENV=staging next build",
-    "build:production": "NODE_ENV=production next build",
     "start": "next start",
     "start:test": "NODE_ENV=test NEXT_PUBLIC_TEST_MODE=true next start",
-    "start:staging": "NODE_ENV=staging next start",
     "lint": "next lint",
     "test:init": "node -e \"require('./lib/test-utils.ts').TestUtils.initializeTestDatabase()\"",
     "test:clear": "node -e \"require('./lib/test-utils.ts').TestUtils.clearTestData()\"",
-    "test:setup": "npm run test:clear && npm run test:init",
-    "deploy:staging": "./scripts/deploy-staging.sh",
-    "deploy:production": "./scripts/deploy-production.sh"
-  },
     "test:setup": "npm run test:clear && npm run test:init"
   },
   "dependencies": {
