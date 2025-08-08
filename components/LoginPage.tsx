@@ -7,16 +7,47 @@ export default function LoginPage() {
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
       setMessage('');
+      setDebugInfo('Starting authentication...');
+      
+      console.log('🔐 Starting Google authentication...');
       await signIn();
+      
       setMessage('Welcome! Redirecting...');
+      setDebugInfo('Authentication successful!');
+      console.log('✅ Authentication successful');
     } catch (error) {
-      console.error("Login error:", error);
-      setMessage(error instanceof Error ? error.message : "Login failed. Please try again.");
+      console.error("❌ Login error:", error);
+      
+      let errorMessage = "Login failed. Please try again.";
+      let debugMessage = '';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide specific guidance based on error type
+        if (error.message.includes('popup_closed_by_user')) {
+          errorMessage = 'Sign-in was cancelled. Please try again.';
+          debugMessage = 'User closed the popup window';
+        } else if (error.message.includes('unauthorized-domain')) {
+          errorMessage = 'Domain not authorized. Please contact administrator.';
+          debugMessage = 'Check Firebase Console > Authentication > Settings > Authorized Domains';
+        } else if (error.message.includes('popup-blocked')) {
+          errorMessage = 'Popup was blocked. Please allow popups for this site.';
+          debugMessage = 'Browser blocked the authentication popup';
+        } else if (error.message.includes('Access Denied')) {
+          errorMessage = 'Access Denied: You are not part of the league.';
+          debugMessage = 'Email not found in Firebase whitelist collection';
+        }
+      }
+      
+      setMessage(errorMessage);
+      setDebugInfo(debugMessage);
     } finally {
       setLoading(false);
     }
@@ -101,23 +132,29 @@ export default function LoginPage() {
             </div>
           </button>
 
+          {/* Error/Success Message */}
           {message && (
-            <div className={`flex items-center gap-3 p-4 mt-6 rounded-xl text-base font-semibold shadow-lg ${
-              message.includes('Welcome') 
-                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' 
-                : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+            <div className={`mt-6 p-4 rounded-lg text-center ${
+              message.includes('Welcome') || message.includes('successful')
+                ? 'bg-green-100 text-green-800 border border-green-300'
+                : 'bg-red-100 text-red-800 border border-red-300'
             }`}>
-              <span className="text-xl">
-                {message.includes('Welcome') ? '✅' : '❌'}
-              </span>
-              {message}
+              <p className="font-medium">{message}</p>
+              {debugInfo && (
+                <p className="text-sm mt-2 opacity-75">{debugInfo}</p>
+              )}
             </div>
           )}
 
-          <div className="mt-9 text-center">
-            <p className="text-sm text-gray-400 leading-relaxed font-normal">
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </p>
+          {/* Debug Information */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">🔧 Debug Info:</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>• Domain: {typeof window !== 'undefined' ? window.location.hostname : 'Unknown'}</p>
+              <p>• Port: {typeof window !== 'undefined' ? window.location.port : 'Unknown'}</p>
+              <p>• Firebase Project: sports-fanatics</p>
+              <p>• Auth Domain: sports-fanatics.firebaseapp.com</p>
+            </div>
           </div>
         </div>
       </div>
