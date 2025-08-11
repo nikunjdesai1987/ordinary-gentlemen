@@ -56,6 +56,33 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Mobile-specific text improvements */
+  h1, h2, h3, h4, h5, h6 {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  /* Ensure text doesn't get cut off on mobile */
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Mobile-safe margins */
+  @media (max-width: 640px) {
+    .mobile-safe-top {
+      padding-top: env(safe-area-inset-top, 1rem);
+    }
+    
+    .mobile-safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
+    }
+  }
 }
 
 @layer components {
