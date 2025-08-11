@@ -113,58 +113,58 @@ export default function StatisticsTab() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Mobile-First Header Section */}
-      <div className="text-center mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-extrabold mb-3 sm:mb-4 bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent drop-shadow-md">
+      {/* Compact Header Section - FPL-style sizing */}
+      <div className="text-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-extrabold mb-2 sm:mb-3 bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent drop-shadow-md">
           🏅 My Performance
         </h2>
-        <div className="text-base sm:text-lg lg:text-xl text-gray-600 font-medium">
+        <div className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium">
           🕒 Last refresh: {new Date().toLocaleString()}
         </div>
       </div>
       
-      {/* Mobile-First Error Display */}
+      {/* Compact Error Display - FPL-style sizing */}
       {error && (
-        <div className="text-center text-red-600 font-semibold mb-6 sm:mb-8 text-base sm:text-lg px-4">
+        <div className="text-center text-red-600 font-semibold mb-4 sm:mb-6 text-sm sm:text-base px-4">
           {error}
         </div>
       )}
       
-      {/* Mobile-First Stats Grid - Single column on mobile, responsive on larger screens */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8">
-        {/* League Standing Card - Mobile-Optimized */}
-        <div className="stat-card flex flex-col items-center p-6 sm:p-8 text-center">
-          <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6">🏆</div>
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gradient">{loading ? '...' : rank}</span>
-            <span className="text-base sm:text-lg lg:text-xl text-gray-600 font-semibold">League Standing</span>
+      {/* Compact Stats Grid - FPL-style sizing */}
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6">
+        {/* League Standing Card - Compact sizing */}
+        <div className="stat-card flex flex-col items-center p-4 sm:p-6 text-center">
+          <div className="text-3xl sm:text-4xl lg:text-5xl mb-3 sm:mb-4">🏆</div>
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gradient">{loading ? '...' : rank}</span>
+            <span className="text-sm sm:text-base lg:text-lg text-gray-600 font-semibold">League Standing</span>
           </div>
         </div>
         
-        {/* Weekly Winnings Card - Mobile-Optimized */}
-        <div className="stat-card flex flex-col items-center p-6 sm:p-8 text-center">
-          <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6">💰</div>
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gradient">{loading ? '...' : `$${weeklyTotal}`}</span>
-            <span className="text-base sm:text-lg lg:text-xl text-gray-600 font-semibold">Weekly Winnings</span>
+        {/* Weekly Winnings Card - Compact sizing */}
+        <div className="stat-card flex flex-col items-center p-4 sm:p-6 text-center">
+          <div className="text-3xl sm:text-4xl lg:text-5xl mb-3 sm:mb-4">💰</div>
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gradient">{loading ? '...' : `$${weeklyTotal}`}</span>
+            <span className="text-sm sm:text-base lg:text-lg text-gray-600 font-semibold">Weekly Winnings</span>
           </div>
         </div>
         
-        {/* Chip Winnings Card - Mobile-Optimized */}
-        <div className="stat-card flex flex-col items-center p-6 sm:p-8 text-center">
-          <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6">🎯</div>
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gradient">{loading ? '...' : `$${chipTotal}`}</span>
-            <span className="text-base sm:text-lg lg:text-xl text-gray-600 font-semibold">Chip Winnings</span>
+        {/* Chip Winnings Card - Compact sizing */}
+        <div className="stat-card flex flex-col items-center p-4 sm:p-6 text-center">
+          <div className="text-3xl sm:text-4xl lg:text-5xl mb-3 sm:mb-4">🎯</div>
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gradient">{loading ? '...' : `$${chipTotal}`}</span>
+            <span className="text-sm sm:text-base lg:text-lg text-gray-600 font-semibold">Chip Winnings</span>
           </div>
         </div>
         
-        {/* Score and Strike Card - Mobile-Optimized */}
-        <div className="stat-card flex flex-col items-center p-6 sm:p-8 text-center">
-          <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6">⚽</div>
-          <div className="flex flex-col gap-2 sm:gap-3">
-            <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gradient">{loading ? '...' : `$${scoreStrikeTotal}`}</span>
-            <span className="text-base sm:text-lg lg:text-xl text-gray-600 font-semibold">Score & Strike</span>
+        {/* Score and Strike Card - Compact sizing */}
+        <div className="stat-card flex flex-col items-center p-4 sm:p-6 text-center">
+          <div className="text-3xl sm:text-4xl lg:text-5xl mb-3 sm:mb-4">⚽</div>
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gradient">{loading ? '...' : `$${scoreStrikeTotal}`}</span>
+            <span className="text-sm sm:text-base lg:text-lg text-gray-600 font-semibold">Score & Strike</span>
           </div>
         </div>
       </div>
