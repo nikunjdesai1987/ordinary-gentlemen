@@ -100,7 +100,7 @@ export default function ScoreStrikeTab() {
   ];
 
   // New game selection logic based on specific team ID requirements
-  const selectGameByTeamPriority = (fixtures: Fixture[]): Fixture | null => {
+  const selectGameByTeamPriority = async (fixtures: Fixture[]): Promise<Fixture | null> => {
     if (!fixtures || fixtures.length === 0) return null;
 
     console.log('=== SELECTING GAME BY TEAM PRIORITY ===');
@@ -126,19 +126,9 @@ export default function ScoreStrikeTab() {
       return index === -1 ? 999 : index;
     };
 
-    // Get teams data for ID mapping
-    const getTeamsData = async () => {
-      try {
-        return await fplApi.getTeams();
-      } catch (error) {
-        console.error('Error fetching teams for ID mapping:', error);
-        return [];
-      }
-    };
-
-    // Main selection logic
-    const performSelection = async () => {
-      const teams = await getTeamsData();
+    try {
+      // Get teams data for ID mapping
+      const teams = await fplApi.getTeams();
       
       // Convert fixtures to include team IDs
       const fixturesWithIds = fixtures.map(fixture => {
@@ -218,12 +208,12 @@ export default function ScoreStrikeTab() {
       // Rule 3: team_a in PRIORITY_TEAM_IDS and team_h in SECONDARY_TEAM_IDS
       const awayPriorityHomeSecondary = fixturesWithIds.filter(f => 
         f.homeTeamId && f.awayTeamId &&
-        PRIORITY_TEAM_IDS.includes(f.awayTeamId) && 
-        SECONDARY_TEAM_IDS.includes(f.homeTeamId)
+        SECONDARY_TEAM_IDS.includes(f.homeTeamId) && 
+        PRIORITY_TEAM_IDS.includes(f.awayTeamId)
       );
 
       if (awayPriorityHomeSecondary.length > 0) {
-        console.log('Rule 3: Found fixtures with priority away team and secondary home team:', awayPriorityHomeSecondary.length);
+        console.log('Rule 3: Found fixtures with secondary home team and priority away team:', awayPriorityHomeSecondary.length);
         
         // Sort by team_a priority order
         awayPriorityHomeSecondary.sort((a, b) => {
@@ -243,22 +233,28 @@ export default function ScoreStrikeTab() {
         return selected;
       }
 
-      // Fallback: No matches found
-      console.log('No fixtures match the priority criteria, returning first available');
-      return fixtures[0];
-    };
-
-    // Execute the selection logic
-    performSelection().then(selected => {
-      if (selected) {
-        setSelectedFixture(selected);
-        console.log('✅ Game selected and set:', selected);
+      // Rule 4: Fallback to first available fixture
+      if (fixturesWithIds.length > 0) {
+        const selected = fixturesWithIds[0];
+        console.log('Rule 4: Fallback to first available fixture:', {
+          fixtureId: selected.id,
+          homeTeam: selected.homeTeam,
+          awayTeam: selected.awayTeam
+        });
+        return selected;
       }
-    }).catch(error => {
-      console.error('❌ Error in game selection:', error);
-    });
 
-    return null; // Return null initially, selection happens asynchronously
+      console.log('No fixtures available for selection');
+      return null;
+    } catch (error) {
+      console.error('Error in selectGameByTeamPriority:', error);
+      // Fallback to first available fixture if there's an error
+      if (fixtures.length > 0) {
+        console.log('Fallback to first fixture due to error');
+        return fixtures[0];
+      }
+      return null;
+    }
   };
 
   // Test function to pull specific fixture from Gameweek 1
@@ -436,7 +432,7 @@ export default function ScoreStrikeTab() {
 
       // Apply team priority selection logic
       console.log('=== APPLYING TEAM PRIORITY SELECTION LOGIC ===');
-      const selectedFixture = selectGameByTeamPriority(mappedFixtures);
+      const selectedFixture = await selectGameByTeamPriority(mappedFixtures);
       
       console.log('=== GAMEWEEK 2 TEST COMPLETE ===');
       return selectedFixture;
@@ -518,7 +514,7 @@ export default function ScoreStrikeTab() {
 
       // Apply team priority selection logic
       console.log('=== APPLYING TEAM PRIORITY SELECTION LOGIC ===');
-      const selectedFixture = selectGameByTeamPriority(mappedFixtures);
+      const selectedFixture = await selectGameByTeamPriority(mappedFixtures);
       
       console.log('=== GAMEWEEK 5 TEST COMPLETE ===');
       return selectedFixture;
@@ -775,10 +771,36 @@ export default function ScoreStrikeTab() {
   // Auto-select game when fixtures or strategy changes
   useEffect(() => {
     if (fixtures.length > 0 && selectionStrategy !== 'manual') {
-      const selected = selectGameByTeamPriority(fixtures);
-      setSelectedFixture(selected);
+      const selectGame = async () => {
+        try {
+          console.log('🔄 Mobile Debug: Starting game selection...');
+          const selected = await selectGameByTeamPriority(fixtures);
+          console.log('✅ Mobile Debug: Game selected:', selected);
+          setSelectedFixture(selected);
+        } catch (error) {
+          console.error('❌ Mobile Debug: Error selecting game:', error);
+          // Fallback to first fixture if selection fails
+          if (fixtures.length > 0) {
+            console.log('🔄 Mobile Debug: Using fallback fixture:', fixtures[0]);
+            setSelectedFixture(fixtures[0]);
+          }
+        }
+      };
+      selectGame();
     }
   }, [fixtures, selectionStrategy]);
+
+  // Mobile fallback: If no fixture is selected after 2 seconds, use first available
+  useEffect(() => {
+    if (fixtures.length > 0 && !selectedFixture) {
+      const fallbackTimer = setTimeout(() => {
+        console.log('🔄 Mobile Debug: Fallback timer triggered, selecting first fixture');
+        setSelectedFixture(fixtures[0]);
+      }, 2000);
+      
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [fixtures, selectedFixture]);
 
   // Load player data when component mounts
   useEffect(() => {
