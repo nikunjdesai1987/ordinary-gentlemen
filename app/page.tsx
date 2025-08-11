@@ -1,54 +1,55 @@
-'use client';
+'use client'
 
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import LoginPage from '@/components/LoginPage';
-import Dashboard from '@/components/Dashboard';
+import { useAuth } from '../contexts/AuthContext'
+import LoginPage from '../components/LoginPage'
+import Dashboard from '../components/Dashboard'
+import { useEffect } from 'react'
+import { AuthProvider } from '../contexts/AuthContext'
 
 function AppContent() {
-  const { user, loading, isWhitelisted } = useAuth();
-  const router = useRouter();
+  const { user, loading } = useAuth()
 
-  // Debug logging
+  // iOS viewport height fix
   useEffect(() => {
-    console.log('AppContent Debug:', {
-      user: user ? { uid: user.uid, email: user.email } : null,
-      loading,
-      isWhitelisted
-    });
-  }, [user, loading, isWhitelisted]);
-
-  useEffect(() => {
-    if (!loading && user && !isWhitelisted) {
-      // User is signed in but not whitelisted - they'll be signed out by the auth context
-      router.push('/');
+    const setVH = () => {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
     }
-  }, [user, loading, isWhitelisted, router]);
+    
+    setVH()
+    window.addEventListener('resize', setVH)
+    window.addEventListener('orientationchange', setVH)
+    
+    return () => {
+      window.removeEventListener('resize', setVH)
+      window.removeEventListener('orientationchange', setVH)
+    }
+  }, [])
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center max-w-sm w-full">
-          <div className="animate-spin-slow w-10 h-10 sm:w-12 sm:h-12 border-3 sm:border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4 sm:mb-6"></div>
-          <p className="text-base sm:text-lg font-semibold text-gray-700">Loading...</p>
-          <p className="text-sm sm:text-base text-gray-500 mt-2">Preparing your dashboard</p>
+      <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center safe-area-inset">
+        <div className="card p-8 text-center space-y-4">
+          <div className="loading-spinner w-12 h-12 mx-auto"></div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-white">Preparing your dashboard</h2>
+            <p className="text-muted">Loading your FPL experience...</p>
+          </div>
         </div>
       </div>
-    );
+    )
   }
 
-  if (!user || !isWhitelisted) {
-    return (
-      <div className="w-full">
-        <LoginPage />
-      </div>
-    );
-  }
-
-  return <Dashboard />;
+  return (
+    <div className="min-h-screen bg-[var(--color-bg)]">
+      {user ? <Dashboard /> : <LoginPage />}
+    </div>
+  )
 }
 
 export default function Home() {
-  return <AppContent />;
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  )
 } 

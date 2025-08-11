@@ -1,65 +1,65 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ['class'],
   content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
   theme: {
-    screens: {
-      'xs': '475px',
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
-      '2xl': '1536px',
-    },
     extend: {
+      container: { 
+        center: true, 
+        padding: '1rem', 
+        screens: { xl: '1200px' } 
+      },
       colors: {
-        primary: {
-          50: '#f0f4ff',
-          100: '#e0e9ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#667eea',
-          600: '#5a67d8',
-          700: '#4c51bf',
-          800: '#434190',
-          900: '#3c366b',
+        bg: 'var(--color-bg)',
+        surface: 'var(--color-surface)',
+        ink: 'var(--pl-ink)',
+        paper: 'var(--pl-paper)',
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        info: 'var(--color-info)',
+        success: 'var(--color-success)',
+        warning: 'var(--color-warning)',
+        danger: 'var(--color-error)',
+        muted: 'var(--pl-muted)',
+        border: 'var(--pl-border)',
+        // FPL-specific colors
+        'pl-purple': {
+          900: 'var(--pl-purple-900)',
+          700: 'var(--pl-purple-700)',
         },
-        secondary: {
-          50: '#fdf4ff',
-          100: '#fae8ff',
-          200: '#f5d0fe',
-          300: '#f0abfc',
-          400: '#e879f9',
-          500: '#d946ef',
-          600: '#c026d3',
-          700: '#a21caf',
-          800: '#86198f',
-          900: '#701a75',
-        },
-        gradient: {
-          start: '#667eea',
-          middle: '#764ba2',
-          end: '#f093fb',
-        }
+        'pl-magenta': 'var(--pl-magenta)',
+        'pl-neon': 'var(--pl-neon)',
+        'pl-cyan': 'var(--pl-cyan)',
+      },
+      borderRadius: {
+        md: '14px', 
+        lg: '20px', 
+        xl: '28px', 
+        full: '9999px'
+      },
+      boxShadow: {
+        card: '0 8px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04)',
+        focus: '0 0 0 3px rgba(0,255,133,.45)',
+        'neon-glow': '0 0 20px rgba(0,255,133,0.3)',
+        'magenta-glow': '0 0 20px rgba(233,0,82,0.3)',
       },
       fontFamily: {
-        sans: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Manrope', 'Poppins', 'Outfit', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        display: ['Manrope', 'Poppins', 'Outfit', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
-        '2xl': ['1.5rem', { lineHeight: '2rem' }],
-        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
-        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
-        '5xl': ['3rem', { lineHeight: '1' }],
-        '6xl': ['3.75rem', { lineHeight: '1' }],
+        'display-1': ['2.25rem', { lineHeight: '1.2', fontWeight: '700' }],
+        'h1': ['2rem', { lineHeight: '1.3', fontWeight: '700' }],
+        'h2': ['1.5rem', { lineHeight: '1.4', fontWeight: '700' }],
+        'h3': ['1.25rem', { lineHeight: '1.4', fontWeight: '600' }],
+        'body-l': ['1.125rem', { lineHeight: '1.6', fontWeight: '500' }],
+        'body': ['1rem', { lineHeight: '1.6', fontWeight: '400' }],
+        'caption': ['0.875rem', { lineHeight: '1.5', fontWeight: '500' }],
       },
       spacing: {
         '18': '4.5rem',
@@ -67,83 +67,55 @@ module.exports = {
         '128': '32rem',
       },
       animation: {
-        'float': 'float 8s ease-in-out infinite',
-        'float-reverse': 'float-reverse 10s ease-in-out infinite',
-        'spin-slow': 'spin 3s linear infinite',
+        'float-reverse': 'float-reverse 6s ease-in-out infinite',
         'bounce-gentle': 'bounce-gentle 2s ease-in-out infinite',
         'fade-in': 'fade-in 0.5s ease-out',
         'slide-up': 'slide-up 0.3s ease-out',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'glow': 'glow 2s ease-in-out infinite alternate',
       },
       keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-          '50%': { transform: 'translateY(-15px) rotate(180deg)' },
-        },
         'float-reverse': {
-          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-          '50%': { transform: 'translateY(15px) rotate(-180deg)' },
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
         'bounce-gentle': {
           '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
+          '50%': { transform: 'translateY(-5px)' },
         },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
         'slide-up': {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
+        'glow': {
+          '0%': { boxShadow: '0 0 5px rgba(0,255,133,0.3)' },
+          '100%': { boxShadow: '0 0 20px rgba(0,255,133,0.6)' },
+        },
+      },
+      backgroundImage: {
+        'gradient-hero': 'var(--grad-hero)',
+        'gradient-accent': 'var(--grad-accent)',
+        'gradient-purple': 'linear-gradient(135deg, var(--pl-purple-900) 0%, var(--pl-purple-700) 100%)',
+        'gradient-neon': 'linear-gradient(90deg, var(--pl-neon), var(--pl-cyan))',
       },
       backdropBlur: {
-        xs: '2px',
+        'xs': '2px',
       },
-      borderRadius: {
-        '4xl': '2rem',
-        '5xl': '2.5rem',
-      },
-      boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        'strong': '0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 2px 10px -2px rgba(0, 0, 0, 0.05)',
-      },
-      transitionDuration: {
-        '400': '400ms',
-        '600': '600ms',
-        '800': '800ms',
-      },
-      zIndex: {
-        '60': '60',
-        '70': '70',
-        '80': '80',
-        '90': '90',
-        '100': '100',
-      }
     },
   },
   plugins: [
-    // Custom plugin for responsive utilities
     function({ addUtilities, theme }) {
       const newUtilities = {
         '.container-responsive': {
-          width: '100%',
-          maxWidth: theme('maxWidth.7xl'),
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          paddingLeft: theme('spacing.4'),
-          paddingRight: theme('spacing.4'),
-          '@screen sm': {
-            paddingLeft: theme('spacing.6'),
-            paddingRight: theme('spacing.6'),
-          },
-          '@screen lg': {
-            paddingLeft: theme('spacing.8'),
-            paddingRight: theme('spacing.8'),
-          },
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '0 1rem',
           '@screen xl': {
-            paddingLeft: theme('spacing.10'),
-            paddingRight: theme('spacing.10'),
+            padding: '0 1.5rem',
           },
         },
         '.touch-target': {
@@ -156,6 +128,15 @@ module.exports = {
           '&::-webkit-scrollbar': {
             display: 'none',
           },
+        },
+        '.safe-area-top': {
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        },
+        '.safe-area-bottom': {
+          paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+        },
+        '.h-screen-ios': {
+          height: 'calc(var(--vh, 1vh) * 100)',
         },
       }
       addUtilities(newUtilities)
