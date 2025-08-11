@@ -118,15 +118,6 @@ class FPLApiService {
   }
 
   private async makeRequest<T>(endpoint: string): Promise<T> {
-    // Check if we're in test mode with mock API enabled
-    if (typeof window !== 'undefined') {
-      const isTestMode = process.env.NODE_ENV === 'test' || process.env.NEXT_PUBLIC_TEST_MODE === 'true';
-      const mockApiEnabled = process.env.NEXT_PUBLIC_MOCK_API === 'true';
-      
-      if (isTestMode && mockApiEnabled) {
-        return this.getMockData<T>(endpoint);
-      }
-    }
 
     const cacheKey = endpoint;
     const cached = this.cache.get(cacheKey);
@@ -146,91 +137,7 @@ class FPLApiService {
     }
   }
 
-  private getMockData<T>(endpoint: string): Promise<T> {
-    console.log(`🧪 Using mock data for endpoint: ${endpoint}`);
-    
-    // Return mock data based on endpoint
-    if (endpoint.includes('/leagues-classic/') && endpoint.includes('/standings/')) {
-      return Promise.resolve({
-        league: {
-          id: 607394,
-          name: "League of Ordinary Gentlemen",
-          admin_entry: 607394, // Mock admin entry
-          short_name: "LOG",
-          scoring: "c"
-        },
-        new_entries: {
-          results: [
-            {
-              id: 1,
-              entry: 607394,
-              entry_name: "Test Admin Team",
-              player_first_name: "Test",
-              player_last_name: "Admin",
-              rank: 1,
-              total: 2000
-            },
-            {
-              id: 2,
-              entry: 3098228,
-              entry_name: "Test User Team",
-              player_first_name: "Test",
-              player_last_name: "User",
-              rank: 2,
-              total: 1900
-            }
-          ]
-        }
-      } as T);
-    }
-    
-    if (endpoint === '/bootstrap-static/') {
-      return Promise.resolve({
-        events: [
-          {
-            id: 1,
-            name: "Gameweek 1",
-            deadline_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            finished: false,
-            is_current: true
-          }
-        ],
-        teams: [
-          { id: 1, name: "Arsenal", short_name: "ARS" },
-          { id: 2, name: "Chelsea", short_name: "CHE" },
-          { id: 3, name: "Liverpool", short_name: "LIV" }
-        ],
-        elements: [
-          { id: 1, first_name: "Mo", second_name: "Salah", web_name: "Salah", team: 3 },
-          { id: 2, first_name: "Erling", second_name: "Haaland", web_name: "Haaland", team: 1 }
-        ],
-        chips: [
-          { name: "wildcard", start_event: 1, stop_event: 19 },
-          { name: "bboost", start_event: 1, stop_event: 38 },
-          { name: "3xc", start_event: 1, stop_event: 38 },
-          { name: "freehit", start_event: 1, stop_event: 38 }
-        ]
-      } as T);
-    }
-    
-    if (endpoint === '/fixtures/') {
-      return Promise.resolve([
-        {
-          id: 1,
-          code: 1234567,
-          event: 1,
-          finished: false,
-          team_a: 1,
-          team_h: 2,
-          team_a_score: null,
-          team_h_score: null
-        }
-      ] as T);
-    }
-    
-    // Default empty response
-    return Promise.resolve({} as T);
-  }
+
 
   // Get all teams
   async getTeams(): Promise<FPLTeam[]> {
@@ -296,7 +203,51 @@ class FPLApiService {
   // Get league standings for a specific league
   async getLeagueStandings(leagueId?: number): Promise<any> {
     const targetLeagueId = leagueId || LEAGUE_ID;
-    return await this.makeRequest(`/leagues-classic/${targetLeagueId}/standings/`);
+    const endpoint = `/leagues-classic/${targetLeagueId}/standings/`;
+    
+    console.log('🌐 ===== FPL API CALL =====');
+    console.log('📡 Making FPL API request to:', `https://fantasy.premierleague.com/api${endpoint}`);
+    console.log('🎯 League ID:', targetLeagueId);
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    
+    try {
+      const startTime = Date.now();
+      const result: any = await this.makeRequest(endpoint);
+      const endTime = Date.now();
+      
+      console.log('✅ FPL API call successful');
+      console.log('⏱️ Response time:', endTime - startTime, 'ms');
+      console.log('📊 Response structure:', {
+        hasLeague: !!result.league,
+        hasStandings: !!result.standings,
+        hasResults: !!result.standings?.results,
+        resultsCount: result.standings?.results?.length || 0,
+        adminEntry: result.league?.admin_entry,
+        leagueName: result.league?.name
+      });
+      
+      if (result.standings?.results) {
+        console.log('👥 League members found:', result.standings.results.length);
+        console.log('📋 First 3 members:', result.standings.results.slice(0, 3).map((m: any) => ({
+          entry: m.entry,
+          player_name: `${m.player_first_name} ${m.player_last_name}`,
+          entry_name: m.entry_name,
+          rank: m.rank
+        })));
+      }
+      
+      return result;
+    } catch (error: any) {
+      console.error('❌ FPL API call failed');
+      console.error('🔍 Error details:', {
+        name: error.name,
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      throw error;
+    }
   }
 
   // Get manager FPL ID by email from league standings

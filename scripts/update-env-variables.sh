@@ -1,0 +1,58 @@
+#!/bin/bash
+
+echo "🔧 Environment Variables Update Guide"
+echo "===================================="
+echo ""
+
+echo "📋 STEP 1: Get New Firebase Config"
+echo "   • Go to Firebase Console → New Project"
+echo "   • Click ⚙️ (gear icon) → Project settings"
+echo "   • Scroll to 'Your apps' section"
+echo "   • Click on your web app"
+echo "   • Copy the config object"
+echo ""
+
+echo "📝 STEP 2: Update .env.development.local"
+echo "   • Open .env.development.local in your editor"
+echo "   • Replace the OLD values with NEW values:"
+echo ""
+
+echo "OLD (Current):"
+echo "   NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyCEV6ZbJZN89sXyvQMO8BhPbUE5NRJwXKI"
+echo "   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=sports-fanatics.firebaseapp.com"
+echo "   NEXT_PUBLIC_FIREBASE_PROJECT_ID=sports-fanatics"
+echo "   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=sports-fanatics.firebasestorage.app"
+echo "   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=395597688864"
+echo "   NEXT_PUBLIC_FIREBASE_APP_ID=1:395597688864:web:18fede5640a84ff271cc45"
+echo ""
+
+echo "NEW (Replace with your new Firebase project values):"
+echo "   NEXT_PUBLIC_FIREBASE_API_KEY=your_new_api_key"
+echo "   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_new_project.firebaseapp.com"
+echo "   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_new_project_id"
+echo "   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_new_project.appspot.com"
+echo "   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_new_sender_id"
+echo "   NEXT_PUBLIC_FIREBASE_APP_ID=your_new_app_id"
+echo ""
+
+echo "🔧 STEP 3: Update the File"
+echo "   • Use any text editor (VS Code, nano, vim)"
+echo "   • Or use command line: nano .env.development.local"
+echo "   • Replace each OLD value with NEW value"
+echo "   • Save the file"
+echo ""
+
+echo "🔄 STEP 4: Restart Development Server"
+echo "   • Stop current server (Ctrl+C)"
+echo "   • Run: npm run dev"
+echo "   • New Firebase config will be loaded"
+echo ""
+
+echo "✅ STEP 5: Test Authentication"
+echo "   • Try logging in with both emails"
+echo "   • Both should work with new Firebase project"
+echo ""
+
+echo "📁 File Location: .env.development.local"
+echo "🔒 Keep this file private (don't commit to git)"
+echo "🌐 This file is for development environment only"

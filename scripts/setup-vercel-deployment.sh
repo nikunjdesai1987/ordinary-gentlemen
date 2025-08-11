@@ -73,7 +73,7 @@ echo "---------------------------------------------------"
 cat > .env.production.local << EOF
 # Production Environment Variables
 NODE_ENV=production
-NEXT_PUBLIC_TEST_MODE=false
+
 NEXT_PUBLIC_MOCK_API=false
 
 # Firebase Configuration (replace with your actual values)
@@ -89,9 +89,7 @@ EOF
 cat > .env.staging.local << EOF
 # Staging Environment Variables
 NODE_ENV=staging
-NEXT_PUBLIC_TEST_MODE=true
 NEXT_PUBLIC_MOCK_API=true
-NEXT_PUBLIC_TEST_DB_NAME=FPLTestDatabase-Staging
 
 # Firebase Configuration (use test project or same as production)
 NEXT_PUBLIC_FIREBASE_API_KEY=your_staging_api_key
@@ -106,9 +104,7 @@ EOF
 cat > .env.development.local << EOF
 # Development Environment Variables
 NODE_ENV=development
-NEXT_PUBLIC_TEST_MODE=true
 NEXT_PUBLIC_MOCK_API=true
-NEXT_PUBLIC_TEST_DB_NAME=FPLTestDatabase-Development
 
 # Firebase Configuration (use test project)
 NEXT_PUBLIC_FIREBASE_API_KEY=your_dev_api_key
@@ -139,19 +135,17 @@ cat > package.json.tmp << 'EOF'
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:test": "NEXT_PUBLIC_TEST_MODE=true NEXT_PUBLIC_MOCK_API=true next dev",
+
     "dev:staging": "NODE_ENV=staging next dev",
     "build": "next build",
-    "build:test": "NODE_ENV=test NEXT_PUBLIC_TEST_MODE=true next build",
+
     "build:staging": "NODE_ENV=staging next build",
     "build:production": "NODE_ENV=production next build",
     "start": "next start",
-    "start:test": "NODE_ENV=test NEXT_PUBLIC_TEST_MODE=true next start",
+
     "start:staging": "NODE_ENV=staging next start",
     "lint": "next lint",
-    "test:init": "node -e \"require('./lib/test-utils.ts').TestUtils.initializeTestDatabase()\"",
-    "test:clear": "node -e \"require('./lib/test-utils.ts').TestUtils.clearTestData()\"",
-    "test:setup": "npm run test:clear && npm run test:init",
+
     "deploy:staging": "./scripts/deploy-staging.sh",
     "deploy:production": "./scripts/deploy-production.sh"
   },
@@ -277,7 +271,7 @@ echo "   - Set up authentication providers"
 echo ""
 
 echo "📖 For detailed instructions, see:"
-echo "   - DEPLOYMENT_TESTING_GUIDE.md"
+
 echo "   - https://vercel.com/docs"
 echo ""
 echo "🎉 Setup complete! Your project is ready for Vercel deployment."

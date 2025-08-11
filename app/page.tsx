@@ -7,6 +7,7 @@ import LoginPage from '@/components/LoginPage';
 import Dashboard from '@/components/Dashboard';
 
 
+
 function AppContent() {
   const { user, loading, isWhitelisted } = useAuth();
   const router = useRouter();
@@ -44,7 +45,6 @@ function AppContent() {
     return (
       <div>
         <LoginPage />
-
       </div>
     );
   }

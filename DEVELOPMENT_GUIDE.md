@@ -2,15 +2,6 @@
 
 ## Environment Setup
 
-### Development with Test Mode (Recommended for Development)
-```bash
-npm run dev:test
-```
-- Uses mock data and test authentication
-- No need for Firebase setup
-- Auto-authenticates with test users
-- Perfect for development and testing
-
 ### Development with Real Authentication
 ```bash
 npm run dev
@@ -19,12 +10,12 @@ npm run dev
 - Uses real FPL API calls
 - Requires whitelisted users
 
-### Test Build
+### Staging Build
 ```bash
-npm run build:test
+npm run build:staging
 ```
-- Builds the application with test mode enabled
-- Used for testing the production build with mock data
+- Builds the application for staging environment
+- Uses staging configuration
 
 ### Production Build
 ```bash
@@ -33,21 +24,12 @@ npm run build
 - Builds the application for production
 - Uses real authentication and APIs
 
-## Test User Available
-
-When using test mode, a default test user is automatically available:
-
-1. **Default Test User**
-   - Email: test@example.com
-   - FPL ID: 123456
-   - Access: Standard user features (no admin privileges)
-
 ## Development Workflow
 
-1. **Start Development**: `npm run dev:test`
+1. **Start Development**: `npm run dev`
 2. **Make Changes**: Edit your code
 3. **Test Changes**: Verify in browser
-4. **Test Build**: `npm run build:test` to test production build
+4. **Staging Build**: `npm run build:staging` for staging environment
 5. **Production Build**: `npm run build` when ready for deployment
 
 ## Common Issues and Solutions
@@ -62,16 +44,10 @@ pkill -f "next"
 rm -rf .next
 ```
 
-### Reset Test Data
-```bash
-npm run test:setup
-```
-
 ## Environment Variables
 
-- `NEXT_PUBLIC_TEST_MODE=true` - Enables test mode
-- `NEXT_PUBLIC_MOCK_API=true` - Uses mock API responses
-- `NODE_ENV=test` - Sets test environment
+- `NEXT_PUBLIC_MOCK_API=true` - Uses mock API responses (for development)
+- `NEXT_PUBLIC_SKIP_WHITELIST=true` - Skips whitelist enforcement (for development only)
 
 ## File Structure
 
@@ -79,5 +55,3 @@ npm run test:setup
 - `components/` - React components
 - `contexts/AuthContext.tsx` - Authentication logic
 - `lib/` - Utility functions and API calls
-- `test.config.js` - Test configuration
-- `lib/test-utils.ts` - Test utilities

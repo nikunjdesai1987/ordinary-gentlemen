@@ -1,0 +1,87 @@
+#!/bin/bash
+
+echo "🔍 Firebase Project Diagnostic Script"
+echo "====================================="
+echo ""
+
+echo "🚨 POTENTIAL ISSUES WITH CURRENT FIREBASE PROJECT:"
+echo ""
+
+echo "1️⃣ DOMAIN RESTRICTIONS:"
+echo "   • Check Firebase Console → Authentication → Settings → Authorized domains"
+echo "   • Ensure 'localhost' and your Vercel domain are listed"
+echo "   • Remove any restrictive domain rules"
+echo ""
+
+echo "2️⃣ AUTHENTICATION PROVIDER SETTINGS:"
+echo "   • Go to Authentication → Sign-in method → Google"
+echo "   • Check if 'Enable' is turned ON"
+echo "   • Verify 'Project support email' is set"
+echo "   • Check for any error messages"
+echo ""
+
+echo "3️⃣ GOOGLE CLOUD OAUTH SETTINGS:"
+echo "   • Go to Google Cloud Console → APIs & Services → OAuth consent screen"
+echo "   • Check if 'Publishing status' is 'Testing' or 'In production'"
+echo "   • Verify 'Test users' includes your emails (if in testing mode)"
+echo "   • Check for any OAuth restrictions"
+echo ""
+
+echo "4️⃣ FIREBASE PROJECT SETTINGS:"
+echo "   • Go to Firebase Console → Project Settings (gear icon)"
+echo "   • Check 'General' tab for any warnings"
+echo "   • Look at 'Service accounts' tab for restrictions"
+echo "   • Check 'Usage and billing' for quota issues"
+echo ""
+
+echo "5️⃣ FIRESTORE RULES:"
+echo "   • Go to Firestore Database → Rules"
+echo "   • Ensure rules allow read access to whitelist collection"
+echo "   • Check for any restrictive rules"
+echo ""
+
+echo "6️⃣ API QUOTAS AND LIMITS:"
+echo "   • Go to Google Cloud Console → APIs & Services → Dashboard"
+echo "   • Check 'Firebase Authentication API' for quota limits"
+echo "   • Look for any rate limiting or quota exceeded errors"
+echo ""
+
+echo "🔧 QUICK FIXES TO TRY:"
+echo ""
+
+echo "A) RESET AUTHENTICATION SETTINGS:"
+echo "   • Go to Authentication → Settings → General"
+echo "   • Check 'User actions' for any restrictions"
+echo "   • Verify 'Session timeout' is reasonable"
+echo ""
+
+echo "B) CHECK GOOGLE SIGN-IN SETTINGS:"
+echo "   • Authentication → Sign-in method → Google"
+echo "   • Click 'Edit' and re-save settings"
+echo "   • Ensure 'Enable' is checked"
+echo ""
+
+echo "C) VERIFY DOMAIN AUTHORIZATION:"
+echo "   • Authentication → Settings → Authorized domains"
+echo "   • Add 'localhost' if not present"
+echo "   • Add your Vercel domain if not present"
+echo ""
+
+echo "D) CHECK PROJECT BILLING:"
+echo "   • Ensure project has billing enabled"
+echo "   • Check for any billing alerts or restrictions"
+echo ""
+
+echo "❓ WHY NEW FIREBASE PROJECT WILL HELP:"
+echo "   • Fresh configuration with no inherited restrictions"
+echo "   • Default settings that work out of the box"
+echo "   • No domain restrictions or authentication rules"
+echo "   • Clean OAuth consent screen setup"
+echo "   • No quota or billing issues from previous usage"
+echo ""
+
+echo "✅ RECOMMENDATION:"
+echo "   Create new Firebase project for clean slate"
+echo "   This will eliminate all potential configuration issues"
+echo "   Your current project likely has restrictive settings"
+echo "   that are blocking new user authentications"

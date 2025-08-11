@@ -21,7 +21,7 @@ interface ChipConfig {
 
 
 export default function AdminTab() {
-  const { user, managerFplId } = useAuth();
+  const { user, managerFplId, isAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -65,18 +65,31 @@ export default function AdminTab() {
     weeklyWinner: 0,
     chipUsage: {}
   });
-
-  // Initialize admin tab on component mount
+  
+  // Initialize admin tab for all users (admin or not)
   useEffect(() => {
-    console.log('🔄 AdminTab: Initializing with managerFplId:', managerFplId);
     if (managerFplId) {
       initializeAdminTab();
-    } else {
-      console.log('⏳ AdminTab: Waiting for managerFplId');
     }
   }, [managerFplId]);
 
-  // Load all league configurations and initialize default league
+  // Show error message if access denied
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-red-600 text-xl font-semibold mb-4">{error}</div>
+        <div className="text-gray-600">
+          {error.includes('Admin privileges required') 
+            ? 'You need to be the league admin to access this section.'
+            : 'Please ensure your manager FPL ID is properly configured.'}
+        </div>
+      </div>
+    );
+  }
+
+
+
+  // Load all league configurations for all users
   useEffect(() => {
     loadAllLeagueConfigs();
     initializeDefaultLeague();
@@ -153,7 +166,7 @@ export default function AdminTab() {
     }
   };
 
-  // Fetch available chips from FPL API
+  // Fetch available chips from FPL API for all users
   useEffect(() => {
     fetchAvailableChips();
   }, []);
@@ -242,6 +255,13 @@ export default function AdminTab() {
       console.log('🚀 AdminTab: Starting initialization');
       setLoading(true);
       setError(null);
+
+      // Double-check admin access
+      if (!isAdmin) {
+        console.log('❌ AdminTab: User does not have admin privileges');
+        setError('Access denied: Admin privileges required');
+        return;
+      }
 
       if (!managerFplId) {
         console.log('❌ AdminTab: No managerFplId available');
@@ -938,6 +958,8 @@ export default function AdminTab() {
           Manage league configuration and payout structure
         </p>
       </div>
+
+
 
       {/* Error Display with Database Reset Options */}
       {error && (

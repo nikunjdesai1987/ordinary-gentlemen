@@ -45,28 +45,28 @@ export default function Dashboard() {
     }
     
     try {
-      console.log('🔐 Checking admin access for managerFplId:', managerFplId);
+      console.log('🔐 Dashboard: Checking admin access for managerFplId:', managerFplId);
+      
+      // Get the manager_fplid from whitelist (which was verified during login)
       const standings = await fplApi.getLeagueStandings(607394);
       const adminEntry = standings.league?.admin_entry;
       
-      console.log('📊 Admin entry from FPL API:', adminEntry);
-      console.log('👤 Manager FPL ID from Firebase:', managerFplId);
-      console.log('🔍 Types - Admin Entry:', typeof adminEntry, 'Manager FPL ID:', typeof managerFplId);
-      console.log('📋 Full standings data:', standings);
+      console.log('📊 Dashboard: Admin entry from FPL API:', adminEntry);
+      console.log('👤 Dashboard: Manager FPL ID from whitelist:', managerFplId);
       
       // Ensure both values are numbers for comparison
       const adminEntryNum = Number(adminEntry);
       const managerFplIdNum = Number(managerFplId);
       
-      console.log('🔢 Converted values - Admin Entry:', adminEntryNum, 'Manager FPL ID:', managerFplIdNum);
+      console.log('🔢 Dashboard: Converted values - Admin Entry:', adminEntryNum, 'Manager FPL ID:', managerFplIdNum);
       
       const isAdminUser = adminEntryNum === managerFplIdNum;
-      console.log('✅ Admin access granted:', isAdminUser);
+      console.log('✅ Dashboard: Admin access granted:', isAdminUser);
       
       setIsAdmin(isAdminUser);
       setAdminCheckComplete(true);
     } catch (error) {
-      console.error('❌ Error checking admin access:', error);
+      console.error('❌ Dashboard: Error checking admin access:', error);
       setIsAdmin(false);
       setAdminCheckComplete(true);
     }
