@@ -519,6 +519,56 @@ h3 { font-size: 1.25rem; }
     outline: none;
     box-shadow: 0 0 0 2px var(--color-secondary), 0 0 0 4px var(--color-surface);
   }
+  
+  .shadow-focus {
+    box-shadow: 0 0 0 3px var(--color-primary), 0 0 0 6px var(--color-surface);
+  }
+  
+  .shadow-neon-glow {
+    box-shadow: 0 0 20px var(--pl-neon), 0 0 40px var(--pl-neon);
+  }
+  
+  .shadow-magenta-glow {
+    box-shadow: 0 0 20px var(--pl-magenta), 0 0 40px var(--pl-magenta);
+  }
+  
+  .shadow-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  /* Background Colors */
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+  
+  .bg-danger {
+    background-color: var(--color-error);
+  }
+  
+  .bg-success {
+    background-color: var(--color-success);
+  }
+  
+  /* Text Colors */
+  .text-primary {
+    color: var(--color-primary);
+  }
+  
+  .border-primary {
+    border-color: var(--color-primary);
+  }
+  
+  .bg-transparent {
+    background-color: transparent;
+  }
+  
+  .border-2 {
+    border-width: 2px;
+  }
 
   /* Safe Area Insets */
   .safe-area-inset {

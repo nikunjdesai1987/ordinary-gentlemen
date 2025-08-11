@@ -1,213 +1,237 @@
-'client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Tab } from '@headlessui/react';
-import { fplApi } from '@/lib/fpl-api';
+import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { Tab } from '@headlessui/react'
 import { 
   NewspaperIcon, 
+  PlayIcon, 
   TrophyIcon, 
-  PlayIcon,
-  ChartBarIcon,
-  ArrowRightOnRectangleIcon,
-  Cog6ToothIcon,
-  Bars3Icon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
-import NewsTab from './tabs/NewsTab';
-import ScoreStrikeTab from './tabs/ScoreStrikeTab';
-import ResultsTab from './tabs/ResultsTab';
-import StatisticsTab from './tabs/StatisticsTab';
-import AdminTab from './tabs/AdminTab';
+  ChartBarIcon, 
+  Cog6ToothIcon 
+} from '@heroicons/react/24/outline'
+import { Button } from './ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/Card'
+import NewsTab from './tabs/NewsTab'
+import ScoreStrikeTab from './tabs/ScoreStrikeTab'
+import ResultsTab from './tabs/ResultsTab'
+import StatisticsTab from './tabs/StatisticsTab'
+import AdminTab from './tabs/AdminTab'
 
 function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(' ')
 }
 
 export default function Dashboard() {
-  const { user, logout, managerFplId, isAdmin, isWhitelisted } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [adminCheckComplete, setAdminCheckComplete] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout, isWhitelisted, isAdmin } = useAuth()
+  const [selectedTab, setSelectedTab] = useState(0)
 
-  // Check admin access on component mount
-  useEffect(() => {
-    if (managerFplId && user) {
-      console.log('🔄 Triggering admin check with managerFplId:', managerFplId, 'and user:', user.email);
-      checkAdminAccess();
-    } else {
-      console.log('⏳ Waiting for managerFplId or user:', { managerFplId, userEmail: user?.email });
-    }
-  }, [managerFplId, user]);
-
-  const checkAdminAccess = async () => {
-    if (!managerFplId) {
-      console.log('No managerFplId available yet');
-      return;
-    }
-    
-    try {
-      console.log('🔐 Dashboard: Checking admin access for managerFplId:', managerFplId);
-      
-      // Get the manager_fplid from whitelist (which was verified during login)
-      const standings = await fplApi.getLeagueStandings(607394);
-      const adminEntry = standings.league?.admin_entry;
-      
-      console.log('📊 Dashboard: Admin entry from FPL API:', adminEntry);
-      console.log('👤 Dashboard: Manager FPL ID from whitelist:', managerFplId);
-      
-      // Ensure both values are numbers for comparison
-      const adminEntryNum = Number(adminEntry);
-      const managerFplIdNum = Number(managerFplId);
-      
-      console.log('🔢 Dashboard: Converted values - Admin Entry:', adminEntryNum, 'Manager FPL ID:', managerFplIdNum);
-      
-      const isAdminUser = adminEntryNum === managerFplIdNum;
-      console.log('✅ Dashboard: Admin access granted:', isAdminUser);
-      
-      // Note: isAdmin is now managed by AuthContext, so we just log the result
-      console.log('✅ Dashboard: Admin status from context:', isAdmin);
-      setAdminCheckComplete(true);
-    } catch (error) {
-      console.error('❌ Dashboard: Error checking admin access:', error);
-      setAdminCheckComplete(true);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-      alert('Logout failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Mobile-first tabs with phone-optimized names
+  // Define tabs based on user permissions
   const tabs = [
-    { name: 'Latest News', icon: NewspaperIcon, component: NewsTab, mobileName: 'News', phoneName: 'News' },
+    { 
+      name: 'Latest News', 
+      icon: NewspaperIcon, 
+      component: NewsTab, 
+      mobileName: 'News', 
+      phoneName: 'News',
+      alwaysVisible: true 
+    },
     // Enhanced access tabs (only for whitelisted users)
     ...(isWhitelisted ? [
-      { name: 'Score and Strike', icon: PlayIcon, component: ScoreStrikeTab, mobileName: 'Score', phoneName: 'Score' },
-      { name: 'Results', icon: TrophyIcon, component: ResultsTab, mobileName: 'Results', phoneName: 'Results' },
-      { name: 'My Performance', icon: ChartBarIcon, component: StatisticsTab, mobileName: 'Stats', phoneName: 'Stats' },
+      { 
+        name: 'Score and Strike', 
+        icon: PlayIcon, 
+        component: ScoreStrikeTab, 
+        mobileName: 'Score', 
+        phoneName: 'Score',
+        alwaysVisible: false 
+      },
+      { 
+        name: 'Results', 
+        icon: TrophyIcon, 
+        component: ResultsTab, 
+        mobileName: 'Results', 
+        phoneName: 'Results',
+        alwaysVisible: false 
+      },
+      { 
+        name: 'My Performance', 
+        icon: ChartBarIcon, 
+        component: StatisticsTab, 
+        mobileName: 'Stats', 
+        phoneName: 'Stats',
+        alwaysVisible: false 
+      },
     ] : []),
     // Admin tab (only for whitelisted admin users)
     ...(isWhitelisted && isAdmin ? [
-      { name: 'Admin', icon: Cog6ToothIcon, component: AdminTab, mobileName: 'Admin', phoneName: 'Admin' }
+      { 
+        name: 'Admin', 
+        icon: Cog6ToothIcon, 
+        component: AdminTab, 
+        mobileName: 'Admin', 
+        phoneName: 'Admin',
+        alwaysVisible: false 
+      }
     ] : []),
-  ];
+  ]
 
-  // Debug info
-  console.log('🎯 Dashboard Debug:', {
-    managerFplId,
-    isAdmin,
-    isWhitelisted,
-    adminCheckComplete,
-    userEmail: user?.email,
-    tabsCount: tabs.length,
-    hasAdminTab: tabs.some(tab => tab.name === 'Admin'),
-    adminTabVisible: isWhitelisted && isAdmin,
-    userIsAdmin: isAdmin,
-    userIsWhitelisted: isWhitelisted
-  });
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
 
   return (
-    <div className="min-h-screen gradient-bg font-sans relative overflow-hidden">
-      {/* Mobile-First Top Navigation Bar */}
-      <div className="glass-card px-4 py-4 sm:px-6 sm:py-4 lg:px-8 lg:py-5 shadow-lg border-b border-white/20 relative z-10">
-        <div className="flex justify-between items-center">
-          {/* Mobile-Optimized Profile Section */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            <img 
-              src={user?.photoURL || '/default-avatar.png'} 
-              alt="Profile" 
-              className="w-12 h-12 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full border-3 border-primary-500 shadow-lg"
-            />
-            <div className="flex flex-col min-w-0">
-              <span className="text-base sm:text-base lg:text-lg font-bold text-gray-800 drop-shadow-sm truncate">
-                Welcome, {user?.displayName?.split(' ')[0] || 'User'}!
-              </span>
-              <span className="text-sm sm:text-sm text-gray-600 font-medium truncate max-w-[140px] sm:max-w-[200px] lg:max-w-none">
-                {user?.email}
-              </span>
+    <div className="min-h-screen bg-[var(--color-bg)]">
+      {/* Header */}
+      <header className="sticky top-0 z-50 backdrop-blur-md supports-backdrop:bg-[rgba(56,0,60,0.8)] border-b border-[color:var(--pl-border)]">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Left: App Brand */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-r from-[var(--pl-magenta)] to-[var(--pl-cyan)] flex items-center justify-center">
+                <span className="text-white font-bold text-lg">OG</span>
+              </div>
+              <span className="font-bold text-xl hidden sm:block">Ordinary Gentlemen</span>
+              <span className="font-bold text-xl sm:hidden">OG</span>
             </div>
           </div>
 
-          {/* Mobile-Optimized Logout Button */}
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={handleLogout} 
-              disabled={loading}
-              className="btn-secondary flex items-center gap-2 py-3 px-4 sm:py-2 sm:px-4 lg:py-3 lg:px-6 text-sm sm:text-sm lg:text-base touch-target"
+          {/* Right: User Profile & Actions */}
+          <div className="flex items-center gap-4">
+            {user && (
+              <>
+                <div className="hidden sm:flex items-center gap-3 text-sm">
+                  <span className="text-[var(--color-text-secondary)]">Welcome,</span>
+                  <span className="font-medium text-white truncate max-w-[120px]">
+                    {user.displayName || user.email?.split('@')[0] || 'User'}
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[var(--pl-magenta)] to-[var(--pl-cyan)] flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">
+                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                  </span>
+                </div>
+              </>
+            )}
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
             >
-              <ArrowRightOnRectangleIcon className="w-5 h-5 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">{loading ? 'Logging out...' : 'Logout'}</span>
-              <span className="sm:hidden">{loading ? '...' : 'Out'}</span>
-            </button>
+              Logout
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="sm:hidden"
+            >
+              Out
+            </Button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Mobile-First Tab Navigation */}
-      <div className="glass-card border-b border-white/20 shadow-lg relative z-5">
-        <Tab.Group defaultIndex={0}>
-          {/* Desktop Tab List - Hidden on mobile */}
-          <Tab.List className="hidden lg:flex px-6 lg:px-8 overflow-x-auto scrollbar-hide">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6 safe-area-inset">
+        {/* Debug Info - Only in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="mb-6 bg-[var(--pl-surface)]/50">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-[var(--color-text-secondary)]">User:</span>
+                  <span className="text-white ml-2">{user?.email || 'None'}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--color-text-secondary)]">Whitelisted:</span>
+                  <span className={`ml-2 ${isWhitelisted ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+                    {isWhitelisted ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[var(--color-text-secondary)]">Admin:</span>
+                  <span className={`ml-2 ${isAdmin ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
+                    {isAdmin ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[var(--color-text-secondary)]">Tabs:</span>
+                  <span className="text-white ml-2">{tabs.length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tab Navigation */}
+        <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
+          {/* Desktop Tab List */}
+          <Tab.List className="hidden lg:flex space-x-2 rounded-xl bg-[var(--color-surface)] p-2 border border-[color:var(--pl-border)]">
             {tabs.map((tab) => (
               <Tab
                 key={tab.name}
                 className={({ selected }) =>
                   classNames(
-                    'flex items-center gap-3 px-6 lg:px-8 py-4 lg:py-5 text-base lg:text-lg font-semibold transition-all duration-300 border-b-3 relative overflow-hidden whitespace-nowrap flex-shrink-0',
+                    'w-full rounded-lg py-3 px-6 text-sm font-medium leading-5 transition-all duration-200',
+                    'ring-white ring-opacity-60 ring-offset-2 ring-offset-[var(--color-primary)] focus:outline-none focus:ring-2',
                     selected
-                      ? 'text-white bg-gradient-to-r from-primary-500 to-primary-600 border-primary-600 shadow-lg drop-shadow-md'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                      ? 'bg-gradient-to-r from-[var(--pl-neon)] to-[var(--pl-cyan)] text-[var(--color-primary-contrast)] shadow-lg'
+                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.12] hover:text-white'
                   )
                 }
               >
-                <tab.icon className="w-5 h-5 lg:w-6 lg:h-6" />
-                {tab.name}
+                <div className="flex items-center gap-2">
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.name}</span>
+                </div>
               </Tab>
             ))}
           </Tab.List>
 
-          {/* Mobile-First Tab List - Large touch targets, phone-optimized */}
-          <Tab.List className="lg:hidden flex px-2 sm:px-3 overflow-x-auto scrollbar-hide gap-1">
+          {/* Mobile Tab List */}
+          <Tab.List className="lg:hidden flex px-2 overflow-x-auto scrollbar-hide gap-1 mb-6">
             {tabs.map((tab) => (
               <Tab
                 key={tab.name}
                 className={({ selected }) =>
                   classNames(
-                    'flex flex-col items-center justify-center gap-2 px-3 py-4 text-sm font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[80px] sm:min-w-[90px] touch-target',
+                    'flex flex-col items-center justify-center gap-2 px-3 py-4 text-sm font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[80px] touch-target',
                     selected
-                      ? 'text-white bg-gradient-to-r from-primary-500 to-primary-600 border-primary-600 shadow-lg'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                      ? 'text-white bg-gradient-to-r from-[var(--pl-neon)] to-[var(--pl-cyan)] border-[var(--pl-cyan)] shadow-lg'
+                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.12] hover:text-white border-transparent'
                   )
                 }
               >
-                <tab.icon className="w-6 h-6 sm:w-7 sm:h-7" />
-                <span className="text-center leading-tight text-xs sm:text-sm font-medium">{tab.phoneName}</span>
+                <tab.icon className="w-6 h-6" />
+                <span className="text-center leading-tight text-xs font-medium">{tab.phoneName}</span>
               </Tab>
             ))}
           </Tab.List>
 
-          {/* Mobile-First Tab Panels - Phone-optimized spacing */}
-          <Tab.Panels className="p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 max-w-7xl mx-auto">
+          {/* Tab Panels */}
+          <Tab.Panels className="mt-6">
             {tabs.map((tab) => (
               <Tab.Panel
                 key={tab.name}
-                className="glass-card rounded-xl sm:rounded-2xl lg:rounded-3xl p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-9 shadow-xl border border-white/20"
+                className={classNames(
+                  'rounded-xl bg-[var(--color-surface)] shadow-lg border border-[color:var(--pl-border)]',
+                  'ring-white ring-opacity-60 ring-offset-2 ring-offset-[var(--color-primary)] focus:outline-none focus:ring-2'
+                )}
               >
-                <tab.component />
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <tab.component />
+                </div>
               </Tab.Panel>
             ))}
           </Tab.Panels>
         </Tab.Group>
-      </div>
+      </main>
     </div>
-  );
+  )
 } 
