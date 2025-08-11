@@ -1407,19 +1407,22 @@ export default function ScoreStrikeTab() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="text-lg text-gray-600">Loading fixtures...</div>
+      <div className="flex items-center justify-center min-h-32 sm:min-h-64">
+        <div className="text-center">
+          <div className="animate-spin-slow w-8 h-8 sm:w-12 sm:h-12 border-3 sm:border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-3 sm:mb-4"></div>
+          <div className="text-sm sm:text-lg text-gray-600">Loading fixtures...</div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <div className="text-red-600 mb-4">{error}</div>
+      <div className="text-center py-6 sm:py-8 px-4">
+        <div className="text-red-600 mb-3 sm:mb-4 text-sm sm:text-base">{error}</div>
         <button 
           onClick={fetchGameweekData}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm sm:text-base touch-target"
         >
           Retry
         </button>
@@ -1428,25 +1431,25 @@ export default function ScoreStrikeTab() {
   }
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto">
-      {/* Enhanced Header with Current Pot */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-3 sm:space-y-4 max-w-6xl mx-auto">
+      {/* Enhanced Header with Current Pot - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-4 sm:gap-6">
         <div className="text-center flex-1">
-          <h1 className="page-header-gradient drop-shadow-md">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-extrabold mb-2 sm:mb-3 bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent drop-shadow-md">
             🎯 Score and Strike
           </h1>
           {currentGameweek && (
-            <p className="page-subheader">
+            <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium">
               Gameweek {currentGameweek.id}
             </p>
           )}
         </div>
         
-        {/* Current Pot Status */}
-        <div className="bg-gradient-to-r from-green-100 to-blue-100 border-2 border-green-300 rounded-xl p-4 text-center shadow-lg">
+        {/* Current Pot Status - Mobile Responsive */}
+        <div className="bg-gradient-to-r from-green-100 to-blue-100 border-2 border-green-300 rounded-lg sm:rounded-xl p-3 sm:p-4 text-center shadow-lg w-full sm:w-auto">
           <div className="text-xs text-gray-600 mb-1">POT TO WIN</div>
-          <div className="text-2xl font-bold text-green-800">
-                            ${currentPot.toLocaleString()}
+          <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-800">
+            ${currentPot.toLocaleString()}
           </div>
           <div className="text-xs text-gray-600 mt-1">
             {potLoading ? 'Loading...' : 'This Week'}
@@ -1454,20 +1457,16 @@ export default function ScoreStrikeTab() {
         </div>
       </div>
 
-      {/* Selected Score and Strike Contest */}
+      {/* Selected Score and Strike Contest - Mobile Responsive */}
       {selectedFixture ? (
-        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border-2 border-blue-200 shadow-xl">
-
-          
-
-          
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            {/* Teams and Score Inputs */}
-            <div className="flex items-center justify-center gap-8 mb-6">
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg sm:rounded-2xl p-3 sm:p-4 lg:p-6 border-2 border-blue-200 shadow-xl">
+          <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-6 shadow-lg">
+            {/* Teams and Score Inputs - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-8 mb-4 sm:mb-6">
               {/* Home Team */}
               <div className="flex flex-col items-center">
-                <div className="text-sm font-medium text-blue-600 mb-2">Home Team</div>
-                <div className="text-2xl font-bold text-gray-800 mb-4">
+                <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1 sm:mb-2">Home Team</div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 sm:mb-4 text-center">
                   {selectedFixture.homeTeam}
                 </div>
                 <input
@@ -1479,19 +1478,19 @@ export default function ScoreStrikeTab() {
                       setHomeGoals(value);
                     }
                   }}
-                  className="w-20 h-20 px-4 border-2 border-gray-300 rounded-xl text-center text-3xl font-bold focus:ring-4 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-20 lg:h-20 px-2 sm:px-4 border-2 border-gray-300 rounded-lg sm:rounded-xl text-center text-xl sm:text-2xl lg:text-3xl font-bold focus:ring-2 sm:focus:ring-4 focus:ring-blue-500 focus:border-blue-500 transition-all touch-target"
                   placeholder="0"
                   disabled={fixtureLocked}
                 />
               </div>
 
               {/* VS */}
-              <div className="text-4xl font-bold text-gray-400">VS</div>
+              <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-400">VS</div>
 
               {/* Away Team */}
               <div className="flex flex-col items-center">
-                <div className="text-sm font-medium text-red-600 mb-2">Away Team</div>
-                <div className="text-2xl font-bold text-gray-800 mb-4">
+                <div className="text-xs sm:text-sm font-medium text-red-600 mb-1 sm:mb-2">Away Team</div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2 sm:mb-4 text-center">
                   {selectedFixture.awayTeam}
                 </div>
                 <input
@@ -1503,24 +1502,24 @@ export default function ScoreStrikeTab() {
                       setAwayGoals(value);
                     }
                   }}
-                  className="w-20 h-20 px-4 border-2 border-gray-300 rounded-xl text-center text-3xl font-bold focus:ring-4 focus:ring-red-500 focus:border-red-500 transition-all"
+                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-20 lg:h-20 px-2 sm:px-4 border-2 border-gray-300 rounded-lg sm:rounded-xl text-center text-xl sm:text-2xl lg:text-3xl font-bold focus:ring-2 sm:focus:ring-4 focus:ring-red-500 focus:border-red-500 transition-all touch-target"
                   placeholder="0"
                   disabled={fixtureLocked}
                 />
               </div>
             </div>
             
-            {/* Goalscorer Selection */}
-            <div className="flex items-center gap-4 mb-6">
-              <label className="text-lg font-semibold text-gray-800 whitespace-nowrap">
+            {/* Goalscorer Selection - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+              <label className="text-sm sm:text-base lg:text-lg font-semibold text-gray-800 whitespace-nowrap">
                 Goalscorer:
               </label>
-              <div className="flex-1 relative">
+              <div className="flex-1 relative w-full">
                 <select
                   value={goalscorer}
                   onChange={(e) => setGoalscorer(e.target.value)}
                   disabled={parseInt(homeGoals) === 0 && parseInt(awayGoals) === 0 || fixtureLocked}
-                  className="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-500 focus:border-blue-500 text-base disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500 transition-all"
+                  className="w-full px-3 sm:px-6 py-2 sm:py-4 border-2 border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 sm:focus:ring-4 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500 transition-all touch-target"
                 >
                   <option value="">
                     {parseInt(homeGoals) === 0 && parseInt(awayGoals) === 0 
@@ -1534,19 +1533,19 @@ export default function ScoreStrikeTab() {
                   ))}
                 </select>
                 {parseInt(homeGoals) === 0 && parseInt(awayGoals) === 0 && (
-                  <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl pointer-events-none flex items-center justify-center">
-                    <span className="text-gray-500 text-sm font-medium">Disabled - No goals predicted</span>
+                  <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-lg sm:rounded-xl pointer-events-none flex items-center justify-center">
+                    <span className="text-gray-500 text-xs sm:text-sm font-medium text-center px-2">Disabled - No goals predicted</span>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex gap-6">
+            {/* Action Buttons - Mobile Responsive */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-6">
               <button
                 onClick={(e) => { e.preventDefault(); handleSubmitPrediction(); }}
                 disabled={submitting || fixtureLocked || !isFormValid()}
-                className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105 ${
+                className={`flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg shadow-lg transition-all transform hover:scale-105 touch-target ${
                   submitting || fixtureLocked || !isFormValid()
                     ? 'bg-gradient-to-r from-gray-400 to-gray-400 text-white cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
@@ -1562,7 +1561,7 @@ export default function ScoreStrikeTab() {
                   setSubmittedEntry(null);
                 }}
                 disabled={!hasFormData()}
-                className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105 ${
+                className={`flex-1 py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base lg:text-lg shadow-lg transition-all transform hover:scale-105 touch-target ${
                   !hasFormData()
                     ? 'bg-gradient-to-r from-gray-300 to-gray-300 text-white cursor-not-allowed'
                     : 'bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700'
@@ -1572,83 +1571,75 @@ export default function ScoreStrikeTab() {
               </button>
             </div>
             
-            {/* Prediction Submitted Display */}
+            {/* Prediction Submitted Display - Mobile Responsive */}
             {submittedEntry && (
-              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="text-green-700 text-sm font-medium">
+              <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-green-700 text-xs sm:text-sm font-medium text-center sm:text-left">
                   ✅ {submittedEntry.homeTeam} {submittedEntry.homeGoals} - {submittedEntry.awayGoals} {submittedEntry.awayTeam} {submittedEntry.goalscorer && `${getPlayerWebName(submittedEntry.goalscorer)}`} - {formatSubmissionTime(submittedEntry.submittedAt)}
                 </div>
               </div>
             )}
             
-            {/* Entry Error Display */}
+            {/* Entry Error Display - Mobile Responsive */}
             {entryError && (
-              <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="text-red-800 font-semibold mb-2">
+              <div className="mt-3 sm:mt-4 bg-red-50 border border-red-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                <div className="text-red-800 font-semibold mb-2 text-sm sm:text-base">
                   ⚠️ Entry Error
                 </div>
-                <div className="text-red-700 text-sm">
+                <div className="text-red-700 text-xs sm:text-sm">
                   {entryError}
                 </div>
               </div>
             )}
             
             {fixtureLocked && (
-              <div className="mt-4 text-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-red-800 font-semibold">🔒 Match Locked</div>
-                <div className="text-red-600 text-sm">Entries closed after kickoff</div>
+              <div className="mt-3 sm:mt-4 text-center p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="text-red-800 font-semibold text-sm sm:text-base">🔒 Match Locked</div>
+                <div className="text-red-600 text-xs sm:text-sm">Entries closed after kickoff</div>
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border-2 border-gray-200 shadow-xl">
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-lg sm:rounded-2xl p-4 sm:p-6 border-2 border-gray-200 shadow-xl">
           <div className="text-center">
-            <div className="text-6xl mb-4">⚽</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading Contest...</h2>
-            <p className="text-gray-600">Selecting the best fixture for this gameweek</p>
+            <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">⚽</div>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 mb-2">Loading Contest...</h2>
+            <p className="text-sm sm:text-base text-gray-600">Selecting the best fixture for this gameweek</p>
           </div>
         </div>
       )}
 
-
-
-
-
-
-
-            
-        
-      {/* Rules */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-6">
-        <h4 className="text-xl font-bold text-gray-800 mb-4">How to Play</h4>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">🎯</span>
+      {/* Rules - Mobile Responsive */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
+        <h4 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">How to Play</h4>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">🎯</span>
             <span>Predict the exact final score (Home Goals vs Away Goals)</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">⚽</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">⚽</span>
             <span>Select an anytime goalscorer from either team (or leave blank for 0-0)</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">🏆</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">🏆</span>
             <span>Win Score N Strike Pot For Correct Score Line and Goal Scorer</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">📊</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">📊</span>
             <span>If no winner the pot will Roll over to next week, else Pot Resets</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">⏰</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">⏰</span>
             <span>Submit predictions before kick-off time only</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">🔄</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">🔄</span>
             <span>Multiple entries allowed - only the most recent before kickoff is considered</span>
           </div>
-          <div className="flex items-center gap-3 text-base text-gray-700">
-            <span className="text-2xl">🔒</span>
+          <div className="flex items-start sm:items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-700">
+            <span className="text-xl sm:text-2xl flex-shrink-0">🔒</span>
             <span>Entries are locked after kickoff - no changes allowed</span>
           </div>
         </div>

@@ -86,18 +86,18 @@ export default function Dashboard() {
     }
   };
 
-  // Enhanced tabs with responsive considerations
+  // Enhanced tabs with responsive considerations and better mobile labels
   const tabs = [
-    { name: 'Latest News', icon: NewspaperIcon, component: NewsTab, shortName: 'News' },
+    { name: 'Latest News', icon: NewspaperIcon, component: NewsTab, shortName: 'News', mobileName: 'News' },
     // Enhanced access tabs (only for whitelisted users)
     ...(isWhitelisted ? [
-      { name: 'Score and Strike', icon: PlayIcon, component: ScoreStrikeTab, shortName: 'Score' },
-      { name: 'Results', icon: TrophyIcon, component: ResultsTab, shortName: 'Results' },
-      { name: 'My Performance', icon: ChartBarIcon, component: StatisticsTab, shortName: 'Stats' },
+      { name: 'Score and Strike', icon: PlayIcon, component: ScoreStrikeTab, shortName: 'Score', mobileName: 'Score' },
+      { name: 'Results', icon: TrophyIcon, component: ResultsTab, shortName: 'Results', mobileName: 'Results' },
+      { name: 'My Performance', icon: ChartBarIcon, component: StatisticsTab, shortName: 'Stats', mobileName: 'Stats' },
     ] : []),
     // Admin tab (only for whitelisted admin users)
     ...(isWhitelisted && isAdmin ? [
-      { name: 'Admin', icon: Cog6ToothIcon, component: AdminTab, shortName: 'Admin' }
+      { name: 'Admin', icon: Cog6ToothIcon, component: AdminTab, shortName: 'Admin', mobileName: 'Admin' }
     ] : []),
   ];
 
@@ -175,32 +175,32 @@ export default function Dashboard() {
             ))}
           </Tab.List>
 
-          {/* Mobile Tab List */}
-          <Tab.List className="md:hidden flex px-4 overflow-x-auto scrollbar-hide">
+          {/* Mobile Tab List - Improved with better labels */}
+          <Tab.List className="md:hidden flex px-2 sm:px-4 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <Tab
                 key={tab.name}
                 className={({ selected }) =>
                   classNames(
-                    'flex flex-col items-center gap-1 px-3 py-2 text-xs font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[80px]',
+                    'flex flex-col items-center gap-1 px-2 sm:px-3 py-2 sm:py-3 text-xs font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[70px] sm:min-w-[80px]',
                     selected
                       ? 'text-white bg-gradient-to-r from-primary-500 to-primary-600 border-primary-600 shadow-lg'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                   )
                 }
               >
-                <tab.icon className="w-5 h-5" />
-                <span className="text-center leading-tight">{tab.shortName}</span>
+                <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-center leading-tight text-xs">{tab.mobileName}</span>
               </Tab>
             ))}
           </Tab.List>
 
           {/* Tab Panels - Responsive */}
-          <Tab.Panels className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-7xl mx-auto">
+          <Tab.Panels className="p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 max-w-7xl mx-auto">
             {tabs.map((tab) => (
               <Tab.Panel
                 key={tab.name}
-                className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 xl:p-9 shadow-xl border border-white/20"
+                className="glass-card rounded-xl sm:rounded-2xl lg:rounded-3xl p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-9 shadow-xl border border-white/20"
               >
                 <tab.component />
               </Tab.Panel>

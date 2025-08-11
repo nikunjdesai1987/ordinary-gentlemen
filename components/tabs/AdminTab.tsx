@@ -950,27 +950,27 @@ export default function AdminTab() {
 
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto">
-      {/* Compact Header */}
-      <div className="text-center mb-4">
-        <h2 className="page-header-gradient drop-shadow-md">⚙️ Admin Panel</h2>
-        <p className="page-subheader">
+    <div className="space-y-3 sm:space-y-4 max-w-6xl mx-auto">
+      {/* Compact Header - Mobile Responsive */}
+      <div className="text-center mb-3 sm:mb-4">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-extrabold mb-2 sm:mb-3 bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent drop-shadow-md">
+          ⚙️ Admin Panel
+        </h2>
+        <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium">
           Manage league configuration and payout structure
         </p>
       </div>
 
-
-
-      {/* Error Display with Database Reset Options */}
+      {/* Error Display with Database Reset Options - Mobile Responsive */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-          <div className="text-red-600 mb-3">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+          <div className="text-red-600 mb-2 sm:mb-3 text-sm sm:text-base">{error}</div>
           {(error.includes('Database version conflict') || error.includes('Database connection timed out')) && (
-            <div className="mt-3">
-              <p className="text-sm text-red-700 mb-3">
+            <div className="mt-2 sm:mt-3">
+              <p className="text-xs sm:text-sm text-red-700 mb-2 sm:mb-3">
                 This is a database issue. Try clearing your browser's IndexedDB:
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={async () => {
                     try {
@@ -983,7 +983,7 @@ export default function AdminTab() {
                       alert(`Failed to clear database: ${err.message || 'Unknown error'}`);
                     }
                   }}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                  className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs sm:text-sm touch-target"
                 >
                   Clear Database Data
                 </button>
@@ -999,7 +999,7 @@ export default function AdminTab() {
                       alert(`Failed to delete database: ${err.message || 'Unknown error'}`);
                     }
                   }}
-                  className="px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900 text-sm"
+                  className="px-3 sm:px-4 py-2 bg-red-800 text-white rounded hover:bg-red-900 text-xs sm:text-sm touch-target"
                 >
                   Delete Database (Nuclear Option)
                 </button>
@@ -1009,19 +1009,15 @@ export default function AdminTab() {
         </div>
       )}
 
-
-
-
-
-      {/* League Configuration Summary - Single Line */}
+      {/* League Configuration Summary - Mobile Responsive */}
       {currentPage === 'summary' && (
-        <div className="bg-white rounded-lg p-4 border mb-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-800">League Configuration Summary</h3>
+        <div className="bg-white rounded-lg p-3 sm:p-4 border mb-3 sm:mb-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 gap-2 sm:gap-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-800">League Configuration Summary</h3>
             <div className="flex gap-2">
               <button
                 onClick={handleEditLeagueConfig}
-                className="px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors touch-target"
                 title="Edit current league configuration"
               >
                 ✏️ Edit Current
@@ -1029,11 +1025,12 @@ export default function AdminTab() {
             </div>
           </div>
           
-          {/* Single Line Summary */}
-          <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-lg border border-gray-200">
-            <div className="flex items-center gap-6">
+          {/* Mobile-Responsive Summary Layout */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+            {/* Mobile: Stacked layout, Desktop: Single line */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4 lg:gap-6">
               {/* League Name */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Name:</span>
                 <span className="text-sm font-semibold text-blue-900">
                   {currentLeagueInfo?.leagueName || 'Ordinary Gentlemen'}
@@ -1041,13 +1038,13 @@ export default function AdminTab() {
               </div>
 
               {/* Participants */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Participants:</span>
                 <span className="text-sm font-semibold text-green-700">{totalManagers}</span>
               </div>
 
               {/* Total Prize Pool */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Total Pool:</span>
                 <span className="text-sm font-semibold text-purple-700">
                   {formatCurrency(parseFloat(managerEntryFee || '0') * parseInt(totalManagers || '0'))}
@@ -1055,7 +1052,7 @@ export default function AdminTab() {
               </div>
 
               {/* League Winners */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Winners:</span>
                 <span className="text-sm font-semibold text-yellow-700">
                   {formatCurrency(payoutStructure.top20Winners.reduce((sum, payout) => sum + payout, 0))}
@@ -1063,7 +1060,7 @@ export default function AdminTab() {
               </div>
 
               {/* Score & Strike */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Score & Strike:</span>
                 <span className="text-sm font-semibold text-red-700">
                   {formatCurrency(payoutStructure.scoreNStrike * parseInt(scoreStrikeWeeks || '0'))}
@@ -1071,7 +1068,7 @@ export default function AdminTab() {
               </div>
 
               {/* Weekly */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Weekly:</span>
                 <span className="text-sm font-semibold text-indigo-700">
                   {formatCurrency(payoutStructure.weeklyWinner * parseInt(weeklyWinnerWeeks || '0'))}
@@ -1079,7 +1076,7 @@ export default function AdminTab() {
               </div>
 
               {/* Chips */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="text-xs font-medium text-gray-600">Chips:</span>
                 <span className="text-sm font-semibold text-pink-700">
                   {formatCurrency(Object.values(payoutStructure.chipUsage).reduce((sum, amount) => sum + amount, 0))}
@@ -1090,14 +1087,12 @@ export default function AdminTab() {
         </div>
       )}
 
-
-
-      {/* Input Fields */}
+      {/* Input Fields - Mobile Responsive */}
       {currentPage === 'configuration' && (
-        <div className="bg-white rounded-lg p-6 border">
-          <h3 className="text-xl font-semibold mb-4">League Configuration</h3>
+        <div className="bg-white rounded-lg p-3 sm:p-4 lg:p-6 border">
+          <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">League Configuration</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Manager Entry Fee
