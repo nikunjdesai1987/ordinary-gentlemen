@@ -21,23 +21,23 @@ export default function ResultsTab() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const subTabs = [
-    { name: 'League', icon: TrophyIcon, component: LeagueTab, shortName: 'League' },
-    { name: 'Score and Strike Results', icon: StarIcon, component: ScoreStrikeResultsTab, shortName: 'Score' },
-    { name: 'Weekly Winners', icon: ChartBarIcon, component: WeeklyWinnerTab, shortName: 'Winners' },
-    { name: 'Chips', icon: PuzzlePieceIcon, component: ChipsTab, shortName: 'Chips' },
+    { name: 'League', icon: TrophyIcon, component: LeagueTab, phoneName: 'League' },
+    { name: 'Score and Strike Results', icon: StarIcon, component: ScoreStrikeResultsTab, phoneName: 'Score' },
+    { name: 'Weekly Winners', icon: ChartBarIcon, component: WeeklyWinnerTab, phoneName: 'Winners' },
+    { name: 'Chips', icon: PuzzlePieceIcon, component: ChipsTab, phoneName: 'Chips' },
   ];
 
   return (
     <div className="max-w-7xl mx-auto">
       <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
-        {/* Mobile-Responsive Tab List */}
-        <Tab.List className="flex space-x-1 sm:space-x-2 rounded-lg sm:rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-1 sm:p-2 mb-4 sm:mb-6 lg:mb-8 shadow-lg border border-gray-200 overflow-x-auto scrollbar-hide">
+        {/* Mobile-First Tab List - Large touch targets, phone-optimized */}
+        <Tab.List className="flex flex-col sm:flex-row gap-2 sm:gap-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-gray-50 to-gray-100 p-2 sm:p-3 mb-6 sm:mb-8 shadow-lg border border-gray-200">
           {subTabs.map((tab) => (
             <Tab
               key={tab.name}
               className={({ selected }) =>
                 classNames(
-                  'flex items-center gap-2 sm:gap-3 w-full rounded-lg sm:rounded-xl py-2 sm:py-3 lg:py-4 px-3 sm:px-4 lg:px-6 text-xs sm:text-sm font-semibold leading-5 transition-all duration-300 transform flex-shrink-0 min-w-[80px] sm:min-w-[100px]',
+                  'flex items-center justify-center gap-3 w-full sm:w-auto rounded-lg sm:rounded-xl py-4 sm:py-4 lg:py-5 px-4 sm:px-6 text-sm sm:text-base font-semibold leading-5 transition-all duration-300 flex-shrink-0 touch-target',
                   'ring-white ring-opacity-60 ring-offset-1 sm:ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
                   selected
                     ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-xl scale-105'
@@ -45,20 +45,20 @@ export default function ResultsTab() {
                 )
               }
             >
-              <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <tab.icon className="w-5 h-5 sm:w-6 sm:h-6" />
               <span className="hidden sm:inline">{tab.name}</span>
-              <span className="sm:hidden">{tab.shortName}</span>
+              <span className="sm:hidden">{tab.phoneName}</span>
             </Tab>
           ))}
         </Tab.List>
         
-        {/* Mobile-Responsive Tab Panels */}
+        {/* Mobile-First Tab Panels - Phone-optimized spacing */}
         <Tab.Panels>
           {subTabs.map((tab) => (
             <Tab.Panel
               key={tab.name}
               className={classNames(
-                'rounded-lg sm:rounded-xl lg:rounded-2xl bg-white shadow-xl border border-gray-100 p-3 sm:p-4 lg:p-6',
+                'rounded-xl sm:rounded-2xl bg-white shadow-xl border border-gray-100 p-4 sm:p-6',
                 'ring-white ring-opacity-60 ring-offset-1 sm:ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2'
               )}
             >
