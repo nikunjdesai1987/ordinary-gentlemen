@@ -10,7 +10,9 @@ import {
   PlayIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import NewsTab from './tabs/NewsTab';
 import ScoreStrikeTab from './tabs/ScoreStrikeTab';
@@ -23,10 +25,10 @@ function classNames(...classes: string[]) {
 }
 
 export default function Dashboard() {
-  const { user, logout, managerFplId } = useAuth();
+  const { user, logout, managerFplId, isAdmin, isWhitelisted } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [adminCheckComplete, setAdminCheckComplete] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Check admin access on component mount
   useEffect(() => {
@@ -63,11 +65,11 @@ export default function Dashboard() {
       const isAdminUser = adminEntryNum === managerFplIdNum;
       console.log('✅ Dashboard: Admin access granted:', isAdminUser);
       
-      setIsAdmin(isAdminUser);
+      // Note: isAdmin is now managed by AuthContext, so we just log the result
+      console.log('✅ Dashboard: Admin status from context:', isAdmin);
       setAdminCheckComplete(true);
     } catch (error) {
       console.error('❌ Dashboard: Error checking admin access:', error);
-      setIsAdmin(false);
       setAdminCheckComplete(true);
     }
   };
@@ -84,82 +86,121 @@ export default function Dashboard() {
     }
   };
 
-  // Only show Admin tab if user is confirmed as league admin and admin check is complete
+  // Enhanced tabs with responsive considerations
   const tabs = [
-    { name: 'Latest News', icon: NewspaperIcon, component: NewsTab },
-    { name: 'Score and Strike', icon: PlayIcon, component: ScoreStrikeTab },
-    { name: 'Results', icon: TrophyIcon, component: ResultsTab },
-    { name: 'My Performance', icon: ChartBarIcon, component: StatisticsTab },
-    // Admin tab is only included if user is verified as league admin and admin check is complete
-    ...(isAdmin && managerFplId && adminCheckComplete ? [{ name: 'Admin', icon: Cog6ToothIcon, component: AdminTab }] : []),
+    { name: 'Latest News', icon: NewspaperIcon, component: NewsTab, shortName: 'News' },
+    // Enhanced access tabs (only for whitelisted users)
+    ...(isWhitelisted ? [
+      { name: 'Score and Strike', icon: PlayIcon, component: ScoreStrikeTab, shortName: 'Score' },
+      { name: 'Results', icon: TrophyIcon, component: ResultsTab, shortName: 'Results' },
+      { name: 'My Performance', icon: ChartBarIcon, component: StatisticsTab, shortName: 'Stats' },
+    ] : []),
+    // Admin tab (only for whitelisted admin users)
+    ...(isWhitelisted && isAdmin ? [
+      { name: 'Admin', icon: Cog6ToothIcon, component: AdminTab, shortName: 'Admin' }
+    ] : []),
   ];
 
   // Debug info
   console.log('🎯 Dashboard Debug:', {
     managerFplId,
     isAdmin,
+    isWhitelisted,
     adminCheckComplete,
     userEmail: user?.email,
     tabsCount: tabs.length,
     hasAdminTab: tabs.some(tab => tab.name === 'Admin'),
-    adminTabIncluded: isAdmin && managerFplId && adminCheckComplete
+    adminTabVisible: isWhitelisted && isAdmin,
+    userIsAdmin: isAdmin,
+    userIsWhitelisted: isWhitelisted
   });
 
   return (
     <div className="min-h-screen gradient-bg font-sans relative overflow-hidden">
-      {/* Top Navigation Bar */}
-      <div className="flex justify-between items-center glass-card px-8 py-5 shadow-lg border-b border-white/20 relative z-10">
-        <div className="flex items-center gap-4">
-          <img 
-            src={user?.photoURL || '/default-avatar.png'} 
-            alt="Profile" 
-            className="w-12 h-12 rounded-full border-3 border-primary-500 shadow-lg"
-          />
-          <div className="flex flex-col">
-            <span className="text-lg font-bold text-gray-800 drop-shadow-sm">
-              Welcome, {user?.displayName}!
-            </span>
-            <span className="text-sm text-gray-600 font-medium">
-              {user?.email}
-            </span>
+      {/* Top Navigation Bar - Responsive */}
+      <div className="glass-card px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-5 shadow-lg border-b border-white/20 relative z-10">
+        <div className="flex justify-between items-center">
+          {/* Profile Section - Responsive */}
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+            <img 
+              src={user?.photoURL || '/default-avatar.png'} 
+              alt="Profile" 
+              className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full border-2 sm:border-3 border-primary-500 shadow-lg"
+            />
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm sm:text-base lg:text-lg font-bold text-gray-800 drop-shadow-sm truncate">
+                Welcome, {user?.displayName?.split(' ')[0] || 'User'}!
+              </span>
+              <span className="text-xs sm:text-sm text-gray-600 font-medium truncate max-w-[120px] sm:max-w-[200px] lg:max-w-none">
+                {user?.email}
+              </span>
+            </div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleLogout} 
+              disabled={loading}
+              className="btn-secondary flex items-center gap-1 sm:gap-2 text-xs sm:text-sm lg:text-base py-2 px-3 sm:py-2 sm:px-4 lg:py-3 lg:px-6"
+            >
+              <ArrowRightOnRectangleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">{loading ? 'Logging out...' : 'Logout'}</span>
+              <span className="sm:hidden">{loading ? '...' : 'Out'}</span>
+            </button>
           </div>
         </div>
-        <button 
-          onClick={handleLogout} 
-          disabled={loading}
-          className="btn-secondary flex items-center gap-2"
-        >
-          <ArrowRightOnRectangleIcon className="w-5 h-5" />
-          {loading ? 'Logging out...' : 'Logout'}
-        </button>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Responsive */}
       <div className="glass-card border-b border-white/20 shadow-lg relative z-5">
         <Tab.Group defaultIndex={0}>
-          <Tab.List className="flex px-8">
+          {/* Desktop Tab List */}
+          <Tab.List className="hidden md:flex px-4 lg:px-8 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => (
               <Tab
                 key={tab.name}
                 className={({ selected }) =>
                   classNames(
-                    'flex items-center gap-2 px-6 py-4 text-base font-semibold transition-all duration-300 border-b-3 relative overflow-hidden',
+                    'flex items-center gap-2 px-4 lg:px-6 py-3 lg:py-4 text-sm lg:text-base font-semibold transition-all duration-300 border-b-3 relative overflow-hidden whitespace-nowrap flex-shrink-0',
                     selected
                       ? 'text-white bg-gradient-to-r from-primary-500 to-primary-600 border-primary-600 shadow-lg drop-shadow-md'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                   )
                 }
               >
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-4 h-4 lg:w-5 lg:h-5" />
                 {tab.name}
               </Tab>
             ))}
           </Tab.List>
-          <Tab.Panels className="p-10 max-w-7xl mx-auto">
+
+          {/* Mobile Tab List */}
+          <Tab.List className="md:hidden flex px-4 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.name}
+                className={({ selected }) =>
+                  classNames(
+                    'flex flex-col items-center gap-1 px-3 py-2 text-xs font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[80px]',
+                    selected
+                      ? 'text-white bg-gradient-to-r from-primary-500 to-primary-600 border-primary-600 shadow-lg'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
+                  )
+                }
+              >
+                <tab.icon className="w-5 h-5" />
+                <span className="text-center leading-tight">{tab.shortName}</span>
+              </Tab>
+            ))}
+          </Tab.List>
+
+          {/* Tab Panels - Responsive */}
+          <Tab.Panels className="p-4 sm:p-6 lg:p-8 xl:p-10 max-w-7xl mx-auto">
             {tabs.map((tab) => (
               <Tab.Panel
                 key={tab.name}
-                className="glass-card rounded-3xl p-9 shadow-xl border border-white/20"
+                className="glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 xl:p-9 shadow-xl border border-white/20"
               >
                 <tab.component />
               </Tab.Panel>

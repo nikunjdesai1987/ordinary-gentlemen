@@ -6,12 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoginPage from '@/components/LoginPage';
 import Dashboard from '@/components/Dashboard';
 
-
-
 function AppContent() {
   const { user, loading, isWhitelisted } = useAuth();
   const router = useRouter();
-
 
   // Debug logging
   useEffect(() => {
@@ -31,11 +28,11 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <div className="glass-card rounded-3xl p-8 text-center">
-          <div className="animate-spin-slow w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-gray-700">Loading...</p>
-
+      <div className="min-h-screen gradient-bg flex items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center max-w-sm w-full">
+          <div className="animate-spin-slow w-10 h-10 sm:w-12 sm:h-12 border-3 sm:border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-4 sm:mb-6"></div>
+          <p className="text-base sm:text-lg font-semibold text-gray-700">Loading...</p>
+          <p className="text-sm sm:text-base text-gray-500 mt-2">Preparing your dashboard</p>
         </div>
       </div>
     );
@@ -43,7 +40,7 @@ function AppContent() {
 
   if (!user || !isWhitelisted) {
     return (
-      <div>
+      <div className="w-full">
         <LoginPage />
       </div>
     );
