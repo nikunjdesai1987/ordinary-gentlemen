@@ -8,34 +8,19 @@ interface WeeklyWinner {
   gameweek: number;
   points: number;
   winners: string;
-  winnings: string;
 }
 
 export default function WeeklyWinnerTab() {
   const [winners, setWinners] = useState<WeeklyWinner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [weeklyWinnerAmount, setWeeklyWinnerAmount] = useState<number>(0);
+
 
   useEffect(() => {
     fetchWeeklyWinners();
-    fetchPayoutStructure();
   }, []);
 
-  const fetchPayoutStructure = async () => {
-    try {
-      console.log('Fetching payout structure...');
-      const adminConfig = await dbUtils.getLatestAdminConfig();
-      if (adminConfig && adminConfig.payoutStructure) {
-        setWeeklyWinnerAmount(adminConfig.payoutStructure.weeklyWinner);
-        console.log('Weekly winner amount:', adminConfig.payoutStructure.weeklyWinner);
-      }
-    } catch (error) {
-      console.error('Error fetching payout structure:', error);
-      // Use default amount if unable to fetch
-      setWeeklyWinnerAmount(50);
-    }
-  };
+
 
   const fetchWeeklyWinners = async () => {
     try {
@@ -65,24 +50,13 @@ export default function WeeklyWinnerTab() {
             const topManagers = managers.filter((m: any) => m.event_total === maxPoints);
             
             const winnerNames = topManagers.map((m: any) => 
-              `${m.player_first_name} ${m.player_last_name}`
+              m.player_name
             ).join(', ');
-            
-            // Calculate winnings based on payout structure
-            let winnings: string;
-            if (topManagers.length > 1) {
-              // Split the pot if multiple winners
-              const splitAmount = weeklyWinnerAmount / topManagers.length;
-                            winnings = `$${splitAmount.toFixed(2)} each`;
-            } else {
-              winnings = `$${weeklyWinnerAmount.toFixed(2)}`;
-            }
             
             weeklyWinnersData.push({
               gameweek: gameweek.id,
               points: maxPoints,
-              winners: winnerNames,
-              winnings: winnings
+              winners: winnerNames
             });
           }
         } catch (error) {
@@ -119,7 +93,7 @@ export default function WeeklyWinnerTab() {
         <p className="text-sm text-gray-600 mt-2">Please try refreshing the page</p>
         <button 
           onClick={fetchWeeklyWinners}
-          className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-lg hover:opacity-80 transition-colors"
         >
           Retry
         </button>
@@ -130,13 +104,14 @@ export default function WeeklyWinnerTab() {
   return (
     <div className="max-w-6xl mx-auto">
       
+
+      
       <div className="flex flex-col gap-0.5 max-h-[calc(100vh-300px)] overflow-y-auto border border-gray-200 rounded-xl">
         {/* Header */}
-        <div className="grid grid-cols-[80px_120px_1fr_120px] gap-4 p-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
-          <span>GW</span>
-          <span>Points</span>
+        <div className="grid grid-cols-[100px_1fr_120px] gap-4 p-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-info)] text-[var(--color-primary-contrast)] rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
+          <span>GameWeek</span>
           <span>Winner(s)</span>
-          <span>Winnings</span>
+          <span>Points</span>
         </div>
         
         {/* Empty state or results */}
@@ -156,21 +131,18 @@ export default function WeeklyWinnerTab() {
           winners.map((winner, index) => (
             <div 
               key={winner.gameweek}
-              className={`grid grid-cols-[80px_120px_1fr_120px] gap-4 p-3 items-center border-b border-gray-200 transition-all duration-300 hover:bg-gray-50 ${
+              className={`grid grid-cols-[100px_1fr_120px] gap-4 p-3 items-center border-b border-gray-200 transition-all duration-300 hover:bg-gray-50 ${
                 index === winners.length - 1 ? 'rounded-b-xl' : ''
               }`}
             >
               <span className="font-bold text-primary-600 text-sm">
                 GW {winner.gameweek}
               </span>
-              <span className="font-bold text-gray-800 text-sm text-center">
-                {winner.points}
-              </span>
               <span className="font-semibold text-gray-800 text-sm">
                 {winner.winners}
               </span>
-              <span className="font-bold text-green-600 text-sm text-center">
-                {winner.winnings}
+              <span className="font-bold text-gray-800 text-sm">
+                {winner.points}
               </span>
             </div>
           ))

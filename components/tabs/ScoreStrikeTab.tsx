@@ -281,6 +281,21 @@ export default function ScoreStrikeTab() {
     }
   }, [fixtures, selectionStrategy])
 
+  // Real-time fixture lock status checking
+  useEffect(() => {
+    if (selectedFixture) {
+      // Check immediately
+      checkFixtureLockStatus()
+      
+      // Set up interval to check every minute for real-time updates
+      const interval = setInterval(() => {
+        checkFixtureLockStatus()
+      }, 60000) // Check every minute
+      
+      return () => clearInterval(interval)
+    }
+  }, [selectedFixture])
+
   // Mobile fallback: If no fixture is selected after 2 seconds, use first available
   useEffect(() => {
     if (fixtures.length > 0 && !selectedFixture) {
@@ -567,6 +582,29 @@ export default function ScoreStrikeTab() {
     return 'Upcoming'
   }
 
+  const getLockStatusMessage = (fixture: Fixture) => {
+    if (fixture.isFinished) {
+      return 'Match finished - predictions closed'
+    }
+    
+    const now = new Date()
+    const kickoffTime = new Date(fixture.kickoffTime)
+    const timeUntilKickoff = kickoffTime.getTime() - now.getTime()
+    
+    if (timeUntilKickoff <= 0) {
+      return 'Match started - predictions closed'
+    }
+    
+    const hours = Math.floor(timeUntilKickoff / (1000 * 60 * 60))
+    const minutes = Math.floor((timeUntilKickoff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (hours > 0) {
+      return `Predictions close in ${hours}h ${minutes}m`
+    } else {
+      return `Predictions close in ${minutes}m`
+    }
+  }
+
   const getPredictionResult = (prediction: UserPrediction, fixture: Fixture) => {
     if (!fixture.isFinished || !fixture.homeScore || !fixture.awayScore) return null
 
@@ -601,9 +639,29 @@ export default function ScoreStrikeTab() {
   }
 
   const isFixtureLocked = (fixture: Fixture) => {
-    // Fixture is locked 1 hour before kickoff
-    const lockTime = new Date(fixture.kickoffTime.getTime() - 60 * 60 * 1000)
-    return new Date() > lockTime
+    // Fixture is locked at kickoff time (when the match starts)
+    // Users can make predictions up until the exact kickoff time from FPL API
+    const now = new Date()
+    const kickoffTime = new Date(fixture.kickoffTime)
+    
+    // Additional check: if fixture is already finished, it's definitely locked
+    if (fixture.isFinished) {
+      console.log(`Fixture ${fixture.id} is locked: Match finished`)
+      return true
+    }
+    
+    // Lock the fixture when current time reaches or passes kickoff time
+    const isLocked = now >= kickoffTime
+    
+    if (isLocked) {
+      console.log(`Fixture ${fixture.id} is locked: Current time (${now.toISOString()}) >= Kickoff time (${kickoffTime.toISOString()})`)
+    } else {
+      const timeUntilKickoff = kickoffTime.getTime() - now.getTime()
+      const minutesUntilKickoff = Math.floor(timeUntilKickoff / (1000 * 60))
+      console.log(`Fixture ${fixture.id} is unlocked: ${minutesUntilKickoff} minutes until kickoff`)
+    }
+    
+    return isLocked
   }
 
   const getTeamShortName = (teamName: string) => {
@@ -624,7 +682,21 @@ export default function ScoreStrikeTab() {
     if (selectedFixture) {
       const locked = isFixtureLocked(selectedFixture)
       setFixtureLocked(locked)
-      console.log('Fixture lock status:', locked)
+      
+      // Log detailed lock status information
+      const now = new Date()
+      const kickoffTime = new Date(selectedFixture.kickoffTime)
+      const timeUntilKickoff = kickoffTime.getTime() - now.getTime()
+      const minutesUntilKickoff = Math.floor(timeUntilKickoff / (1000 * 60))
+      
+      console.log('Fixture lock status:', {
+        locked,
+        isFinished: selectedFixture.isFinished,
+        kickoffTime: kickoffTime.toISOString(),
+        currentTime: now.toISOString(),
+        minutesUntilKickoff: locked ? 'LOCKED' : minutesUntilKickoff,
+        status: locked ? 'LOCKED' : 'OPEN'
+      })
     }
   }
 
@@ -679,7 +751,7 @@ export default function ScoreStrikeTab() {
               <span className="text-[var(--color-error)] text-2xl">!</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Failed to Load Game</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to Load Game</h3>
               <p className="text-[var(--color-text-secondary)] text-sm mb-4">{error}</p>
               <Button onClick={fetchGameweekData} variant="outline" size="sm">
                 Try Again
@@ -718,7 +790,7 @@ export default function ScoreStrikeTab() {
       {/* Contest Display */}
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-xl font-semibold text-white mb-4 text-center">
+          <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4 text-center">
             This Week's Contest
           </h3>
           
@@ -731,7 +803,7 @@ export default function ScoreStrikeTab() {
                     <div className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
                       Home Team
                     </div>
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-2xl font-bold text-[var(--color-text-primary)]">
                       {selectedFixture.homeTeam}
                     </div>
                   </div>
@@ -742,7 +814,7 @@ export default function ScoreStrikeTab() {
                     <div className="text-lg font-medium text-[var(--color-text-secondary)] mb-2">
                       Away Team
                     </div>
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-2xl font-bold text-[var(--color-text-primary)]">
                       {selectedFixture.awayTeam}
                     </div>
                   </div>
@@ -751,7 +823,29 @@ export default function ScoreStrikeTab() {
                 <div className="text-[var(--color-text-secondary)] text-sm">
                   {formatKickoffTime(selectedFixture.kickoffTime)}
                 </div>
+                
+                {/* Lock Status Message */}
+                <div className={`mt-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                  fixtureLocked 
+                    ? 'bg-[var(--color-error)]/10 text-[var(--color-error)] border border-[var(--color-error)]/20' 
+                    : 'bg-[var(--color-success)]/10 text-[var(--color-success)] border border-[var(--color-success)]/20'
+                }`}>
+                  {getLockStatusMessage(selectedFixture)}
+                </div>
               </div>
+
+              {/* Form Lock Warning */}
+              {fixtureLocked && (
+                <div className="bg-[var(--color-error)]/10 border border-[var(--color-error)]/20 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-[var(--color-error)]">
+                    <span className="text-lg">🔒</span>
+                    <span className="font-medium">Predictions are now closed for this fixture</span>
+                  </div>
+                  <p className="text-[var(--color-error)]/80 text-sm mt-1">
+                    The match has started or finished. You can no longer submit or modify predictions.
+                  </p>
+                </div>
+              )}
 
               {/* Score Inputs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

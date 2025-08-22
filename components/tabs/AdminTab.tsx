@@ -41,7 +41,7 @@ export default function AdminTab() {
   const [configChanged, setConfigChanged] = useState(false);
   const [leagueName, setLeagueName] = useState<string>('League of Ordinary Gentlemen');
   const [selectedLeagueId, setSelectedLeagueId] = useState<string>('607394');
-  const [currentPage, setCurrentPage] = useState<'configuration' | 'payoutStructure' | 'summary' | 'addLeague'>('configuration');
+  const [currentPage, setCurrentPage] = useState<'leagueConfiguration' | 'scoreAndStrike' | 'headsUpSetup' | 'weeklyUtility'>('leagueConfiguration');
   const [leagueConfigs, setLeagueConfigs] = useState<AdminConfig[]>([]);
   const [currentLeagueIndex, setCurrentLeagueIndex] = useState<number>(-1);
   const [newLeagueId, setNewLeagueId] = useState<string>('');
@@ -49,6 +49,43 @@ export default function AdminTab() {
   const [verifyingLeague, setVerifyingLeague] = useState<boolean>(false);
   const [leagueVerificationError, setLeagueVerificationError] = useState<string | null>(null);
   const [currentLeagueInfo, setCurrentLeagueInfo] = useState<LeagueInfo | null>(null);
+  
+  // Score and Strike state
+  const [selectedGameweek, setSelectedGameweek] = useState<number>(1);
+  const [gameweeks, setGameweeks] = useState<any[]>([]);
+  const [fixtures, setFixtures] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [players, setPlayers] = useState<any[]>([]);
+  const [leagueStandings, setLeagueStandings] = useState<any[]>([]);
+  const [scoreStrikeEntries, setScoreStrikeEntries] = useState<any[]>([]);
+  const [loadingScoreStrike, setLoadingScoreStrike] = useState(false);
+  const [entryFormData, setEntryFormData] = useState<{[key: number]: {
+    fixtureId: number;
+    homeGoals: number;
+    awayGoals: number;
+    playerName: string;
+  }}>({});
+
+  // Heads Up Setup state
+  const [headsUpEntryAmount, setHeadsUpEntryAmount] = useState<string>('');
+  const [selectedHeadsUpManagers, setSelectedHeadsUpManagers] = useState<number[]>([]);
+  const [headsUpConfigConfirmed, setHeadsUpConfigConfirmed] = useState(false);
+  const [headsUpConfig, setHeadsUpConfig] = useState<{
+    entryAmount: number;
+    managers: number[];
+    isActive: boolean;
+    createdAt: Date;
+  } | null>(null);
+
+  // Weekly Utility state
+  const [importingWeeklyData, setImportingWeeklyData] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    success: boolean;
+    message: string;
+    importedCount?: number;
+    gameweek?: number;
+  } | null>(null);
+  const [weeklyWinners, setWeeklyWinners] = useState<any[]>([]);
   
   // Payout structure state
   const [payoutStructure, setPayoutStructure] = useState<PayoutStructure>({
@@ -72,6 +109,27 @@ export default function AdminTab() {
       initializeAdminTab();
     }
   }, [managerFplId]);
+
+  // Initialize Score and Strike data when component mounts or when switching to Score and Strike tab
+  useEffect(() => {
+    if (currentPage === 'scoreAndStrike' && managerFplId) {
+      loadScoreAndStrikeData();
+    }
+  }, [currentPage, managerFplId]);
+
+  // Initialize Heads Up Setup data when component mounts or when switching to Heads Up Setup tab
+  useEffect(() => {
+    if (currentPage === 'headsUpSetup' && managerFplId) {
+      loadHeadsUpData();
+    }
+  }, [currentPage, managerFplId]);
+
+  // Initialize Weekly Utility data when component mounts or when switching to Weekly Utility tab
+  useEffect(() => {
+    if (currentPage === 'weeklyUtility' && managerFplId) {
+      loadWeeklyWinnersData();
+    }
+  }, [currentPage, managerFplId]);
 
   // Show error message if access denied
   if (error) {
@@ -99,6 +157,13 @@ export default function AdminTab() {
   useEffect(() => {
     loadCurrentLeagueInfo();
   }, [selectedLeagueId]);
+
+  // Load Score and Strike data when page changes
+  useEffect(() => {
+    if (currentPage === 'scoreAndStrike') {
+      loadScoreAndStrikeData();
+    }
+  }, [currentPage, selectedLeagueId]);
 
   const loadAllLeagueConfigs = async () => {
     try {
@@ -164,6 +229,516 @@ export default function AdminTab() {
     } catch (error) {
       console.error('Error loading current league info:', error);
     }
+  };
+
+  const loadScoreAndStrikeData = async () => {
+    try {
+      setLoadingScoreStrike(true);
+      
+      // Load teams and players first
+      const [teamsData, playersData] = await Promise.all([
+        fplApi.getTeams(),
+        fplApi.getPlayers()
+      ]);
+      setTeams(teamsData);
+      setPlayers(playersData);
+      
+      // Load league standings
+      const standingsData = await fplApi.getLeagueStandings(parseInt(selectedLeagueId));
+      setLeagueStandings(standingsData.standings?.results || []);
+      
+      // Load ALL fixtures to get unique gameweeks
+      const allFixturesData = await fplApi.getFixtures();
+      
+      // Extract unique gameweeks from fixtures endpoint
+      const uniqueGameweeks = Array.from(new Set(allFixturesData.map(fixture => fixture.event)))
+        .sort((a, b) => a - b)
+        .map(eventId => ({
+          id: eventId,
+          name: `Gameweek ${eventId}`,
+          event: eventId
+        }));
+      
+      setGameweeks(uniqueGameweeks);
+      
+      // If no gameweek is selected or selected gameweek doesn't exist in fixtures, use first available
+      if (!selectedGameweek || !uniqueGameweeks.find(gw => gw.id === selectedGameweek)) {
+        setSelectedGameweek(uniqueGameweeks[0]?.id || 1);
+      }
+      
+      // Load fixtures for selected gameweek
+      const fixturesData = allFixturesData.filter(fixture => fixture.event === selectedGameweek);
+      setFixtures(fixturesData);
+      
+      // Load existing score and strike entries for the gameweek
+      const existingEntries = await dbUtils.getScoreStrikeEntriesByFixture(0, selectedGameweek);
+      setScoreStrikeEntries(existingEntries);
+      
+      console.log('Score and Strike data loaded:', {
+        gameweeks: uniqueGameweeks.length,
+        fixtures: fixturesData.length,
+        teams: teamsData.length,
+        players: playersData.length,
+        managers: standingsData.standings?.results?.length || 0,
+        selectedGameweek,
+        fixturesForGameweek: fixturesData.length
+      });
+      
+    } catch (error) {
+      console.error('Error loading Score and Strike data:', error);
+    } finally {
+      setLoadingScoreStrike(false);
+    }
+  };
+
+  // Separate function to load fixtures for a specific gameweek
+  const loadFixturesForGameweek = async (gameweek: number) => {
+    try {
+      console.log(`Loading fixtures for gameweek ${gameweek}...`);
+      
+      // Load ALL fixtures and filter for the specific gameweek
+      const allFixturesData = await fplApi.getFixtures();
+      const fixturesForGameweek = allFixturesData.filter(fixture => fixture.event === gameweek);
+      
+      setFixtures(fixturesForGameweek);
+      
+      console.log(`Fixtures loaded for GW${gameweek}:`, {
+        totalFixtures: allFixturesData.length,
+        fixturesForGameweek: fixturesForGameweek.length,
+        gameweekIds: fixturesForGameweek.map(f => f.event),
+        fixtureDetails: fixturesForGameweek.map(f => ({
+          id: f.id,
+          homeTeam: f.team_h,
+          awayTeam: f.team_a,
+          event: f.event
+        }))
+      });
+      
+      // Load existing score and strike entries for the new gameweek
+      const existingEntries = await dbUtils.getScoreStrikeEntriesByFixture(0, gameweek);
+      setScoreStrikeEntries(existingEntries);
+      
+    } catch (error) {
+      console.error(`Error loading fixtures for gameweek ${gameweek}:`, error);
+    }
+  };
+
+  // Heads Up Setup functions
+  const loadHeadsUpData = async () => {
+    try {
+      // Load league standings to get available managers
+      const standingsData = await fplApi.getLeagueStandings(parseInt(selectedLeagueId));
+      setLeagueStandings(standingsData.standings?.results || []);
+      
+      // Load existing heads up configuration if any
+      const existingConfig = await dbUtils.getHeadsUpConfig();
+      if (existingConfig) {
+        setHeadsUpConfig(existingConfig);
+        setHeadsUpEntryAmount(existingConfig.entryAmount.toString());
+        setSelectedHeadsUpManagers(existingConfig.managers);
+        setHeadsUpConfigConfirmed(existingConfig.isActive);
+      }
+      
+      console.log('Heads Up data loaded:', {
+        managers: standingsData.standings?.results?.length || 0,
+        existingConfig: existingConfig ? 'Found' : 'None'
+      });
+      
+    } catch (error) {
+      console.error('Error loading Heads Up data:', error);
+    }
+  };
+
+  const handleManagerSelection = (managerId: number) => {
+    setSelectedHeadsUpManagers(prev => {
+      if (prev.includes(managerId)) {
+        return prev.filter(id => id !== managerId);
+      } else {
+        return prev.concat(managerId);
+      }
+    });
+  };
+
+  const confirmHeadsUpConfig = async () => {
+    try {
+      if (!headsUpEntryAmount || parseFloat(headsUpEntryAmount) <= 0) {
+        setError('Please enter a valid entry amount');
+        return;
+      }
+      
+      if (selectedHeadsUpManagers.length < 2) {
+        setError('Please select at least 2 managers for heads up games');
+        return;
+      }
+      
+      const config = {
+        entryAmount: parseFloat(headsUpEntryAmount),
+        managers: selectedHeadsUpManagers,
+        isActive: true,
+        createdAt: new Date()
+      };
+      
+      await dbUtils.saveHeadsUpConfig(config);
+      setHeadsUpConfig(config);
+      setHeadsUpConfigConfirmed(true);
+      setError(null);
+      
+      console.log('Heads Up configuration confirmed:', config);
+      
+    } catch (error) {
+      console.error('Error confirming Heads Up configuration:', error);
+      setError('Failed to save Heads Up configuration');
+    }
+  };
+
+  const resetHeadsUpConfig = () => {
+    setHeadsUpConfig(null);
+    setHeadsUpEntryAmount('');
+    setSelectedHeadsUpManagers([]);
+    setHeadsUpConfigConfirmed(false);
+    setError(null);
+  };
+
+  // Weekly Utility functions
+  const importWeeklyDataFromFPL = async () => {
+    try {
+      setImportingWeeklyData(true);
+      setImportResult(null);
+      setError(null);
+
+      console.log('🔄 Starting weekly data import from FPL API...');
+      
+      // Get current gameweek from FPL API
+      const gameweeksData = await fplApi.getGameweeks();
+      const currentGameweek = gameweeksData.find(gw => gw.is_current);
+      
+      if (!currentGameweek) {
+        throw new Error('Could not determine current gameweek from FPL API');
+      }
+
+      console.log(`📅 Current gameweek: ${currentGameweek.id} - ${currentGameweek.name}`);
+
+      // Get league standings from FPL API for the current gameweek
+      const standingsData = await fplApi.getLeagueStandings(parseInt(selectedLeagueId));
+      const standings = standingsData.standings?.results || [];
+
+      if (standings.length === 0) {
+        throw new Error('No league standings found from FPL API');
+      }
+
+      console.log(`👥 Found ${standings.length} managers in league standings for GW${currentGameweek.id}`);
+
+      // Check if data already exists for this gameweek
+      const existingEntries = await dbUtils.getWeeklyWinnersByGameweek(currentGameweek.id);
+      
+      if (existingEntries.length > 0) {
+        console.log(`⚠️ Found ${existingEntries.length} existing entries for GW${currentGameweek.id}`);
+        
+        // Always overwrite for the same gameweek to ensure data consistency
+        console.log(`🔄 Overwriting existing data for GW${currentGameweek.id} to ensure consistency`);
+        
+        // Delete existing entries for this gameweek
+        await dbUtils.deleteWeeklyWinnersByGameweek(currentGameweek.id);
+        console.log(`🗑️ Deleted ${existingEntries.length} existing entries for GW${currentGameweek.id}`);
+      }
+
+      // Create weekly winner entries for all managers
+      const weeklyWinnerEntries = standings.map((standing: any) => ({
+        gameweek: currentGameweek.id,
+        name: currentGameweek.name,
+        managerName: standing.player_name,
+        managerFplId: standing.entry,
+        managerScore: standing.event_total,
+        isCurrent: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      // Mark all existing entries as not current (only the latest imported gameweek should be current)
+      await dbUtils.markAllWeeklyWinnersAsNotCurrent();
+
+      // Save all new entries
+      let importedCount = 0;
+      for (const entry of weeklyWinnerEntries) {
+        await dbUtils.saveWeeklyWinner(entry);
+        importedCount++;
+      }
+
+      console.log(`✅ Successfully imported ${importedCount} weekly winner entries for Gameweek ${currentGameweek.id}`);
+
+      setImportResult({
+        success: true,
+        message: `Successfully imported ${importedCount} entries for Gameweek ${currentGameweek.id}`,
+        importedCount,
+        gameweek: currentGameweek.id
+      });
+
+      // Refresh the page data if we're on a relevant tab
+      if (currentPage === 'headsUpSetup') {
+        loadHeadsUpData();
+      }
+
+      // Refresh the weekly winners data on this tab
+      if (currentPage === 'weeklyUtility') {
+        loadWeeklyWinnersData();
+      }
+
+    } catch (error) {
+      console.error('❌ Error importing weekly data:', error);
+      setError(`Failed to import weekly data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setImportResult({
+        success: false,
+        message: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    } finally {
+      setImportingWeeklyData(false);
+    }
+  };
+
+  const loadWeeklyWinnersData = async () => {
+    try {
+      const allWeeklyWinners = await dbUtils.getAllWeeklyWinners();
+      setWeeklyWinners(allWeeklyWinners);
+      console.log('Weekly winners data loaded:', allWeeklyWinners.length);
+    } catch (error) {
+      console.error('Error loading weekly winners data:', error);
+      setError('Failed to load weekly winners data');
+    }
+  };
+
+  const handleGameweekChange = async (gameweek: number) => {
+    console.log(`Gameweek changed to: ${gameweek}`);
+    setSelectedGameweek(gameweek);
+    
+    // Immediately load fixtures for the new gameweek
+    await loadFixturesForGameweek(gameweek);
+  };
+
+  const saveScoreStrikeEntry = async (managerFplId: number, fixtureId: number, homeGoals: number, awayGoals: number, playerName: string) => {
+    try {
+      const manager = leagueStandings.find(m => m.entry === managerFplId);
+      if (!manager) {
+        console.error('Manager not found:', managerFplId);
+        return;
+      }
+
+      const entry = {
+        fplleague_id: parseInt(selectedLeagueId),
+        manager_email: manager.player_name, // Using player_name as email for now
+        manager_fplid: managerFplId,
+        manager_f_name: manager.player_name.split(' ')[0] || '',
+        manager_l_name: manager.player_name.split(' ').slice(1).join(' ') || '',
+        manager_scrname: manager.entry_name,
+        fixture_id: fixtureId,
+        gameweek: selectedGameweek,
+        home_goal: homeGoals,
+        away_goal: awayGoals,
+        player_name: playerName,
+        submitted_timestamp: new Date()
+      };
+
+      await dbUtils.saveScoreStrikeEntry(entry);
+      
+      // Reload entries to show the new one
+      const updatedEntries = await dbUtils.getScoreStrikeEntriesByFixture(0, selectedGameweek);
+      setScoreStrikeEntries(updatedEntries);
+      
+      console.log('Score and Strike entry saved successfully');
+    } catch (error) {
+      console.error('Error saving Score and Strike entry:', error);
+    }
+  };
+
+  const updateEntryFormData = (managerFplId: number, field: string, value: any) => {
+    setEntryFormData(prev => ({
+      ...prev,
+      [managerFplId]: {
+        ...prev[managerFplId],
+        [field]: value
+      }
+    }));
+  };
+
+  // Function to get priority fixture for Score & Strike game engine logic
+  // This uses the EXACT same logic as the main Score & Strike tab
+  // NOTE: Admin tab has NO fixture locking - admins can enter data for any gameweek/fixture
+  const getPriorityFixture = (manager: any, gameweek: number) => {
+    if (!fixtures.length) {
+      console.log(`❌ No fixtures available for gameweek ${gameweek}`);
+      return null;
+    }
+    
+    console.log('=== SELECTING GAME BY TEAM PRIORITY (Admin Tab) ===');
+    console.log(`Gameweek: ${gameweek}`);
+    console.log('Available fixtures:', fixtures.length);
+    console.log('Fixtures data:', fixtures.map(f => ({
+      id: f.id,
+      event: f.event,
+      team_h: f.team_h,
+      team_a: f.team_a
+    })));
+
+    // Priority team IDs as specified in main Score & Strike tab
+    const PRIORITY_TEAM_IDS = [1, 7, 12, 13, 14, 18];
+    const SECONDARY_TEAM_IDS = [2, 15];
+    
+    // Priority order for team_h selection
+    const TEAM_H_PRIORITY_ORDER = [13, 12, 1, 14, 7, 18];
+    const TEAM_A_PRIORITY_ORDER = [15, 2];
+
+    // Convert fixtures to include team IDs
+    const fixturesWithIds = fixtures.map(fixture => {
+      const homeTeam = teams.find(t => t.id === fixture.team_h);
+      const awayTeam = teams.find(t => t.id === fixture.team_a);
+      return {
+        fixture,
+        homeTeamId: fixture.team_h,
+        awayTeamId: fixture.team_a,
+        homeTeam,
+        awayTeam
+      };
+    });
+
+    console.log('Fixtures with team IDs:', fixturesWithIds.map(f => ({
+      id: f.fixture.id,
+      homeTeam: f.homeTeam?.name,
+      homeTeamId: f.homeTeamId,
+      awayTeam: f.awayTeam?.name,
+      awayTeamId: f.awayTeamId
+    })));
+
+    // Rule 1: Both team_h and team_a in PRIORITY_TEAM_IDS
+    const bothPriority = fixturesWithIds.filter(f => 
+      f.homeTeamId && f.awayTeamId &&
+      PRIORITY_TEAM_IDS.includes(f.homeTeamId) && 
+      PRIORITY_TEAM_IDS.includes(f.awayTeamId)
+    );
+
+    if (bothPriority.length > 0) {
+      console.log('Found fixtures with both teams in priority list:', bothPriority.length);
+      // Sort by team_h priority order
+      const sorted = bothPriority.sort((a, b) => {
+        const aIndex = TEAM_H_PRIORITY_ORDER.indexOf(a.homeTeamId!);
+        const bIndex = TEAM_H_PRIORITY_ORDER.indexOf(b.homeTeamId!);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      });
+      
+      console.log('Selected fixture (both priority):', {
+        homeTeam: sorted[0].homeTeam?.name,
+        awayTeam: sorted[0].awayTeam?.name,
+        fixtureId: sorted[0].fixture.id
+      });
+      
+      return sorted[0];
+    }
+
+    // Rule 2: team_h in PRIORITY_TEAM_IDS and team_a in SECONDARY_TEAM_IDS
+    const priorityHomeSecondaryAway = fixturesWithIds.filter(f => 
+      f.homeTeamId && f.awayTeamId &&
+      PRIORITY_TEAM_IDS.includes(f.homeTeamId) && 
+      SECONDARY_TEAM_IDS.includes(f.awayTeamId)
+    );
+
+    if (priorityHomeSecondaryAway.length > 0) {
+      console.log('Found fixtures with priority home vs secondary away:', priorityHomeSecondaryAway.length);
+      // Sort by team_h priority order first, then team_a priority order
+      const sorted = priorityHomeSecondaryAway.sort((a, b) => {
+        const aHomeIndex = TEAM_H_PRIORITY_ORDER.indexOf(a.homeTeamId!);
+        const bHomeIndex = TEAM_H_PRIORITY_ORDER.indexOf(b.homeTeamId!);
+        if (aHomeIndex !== bHomeIndex) {
+          return (aHomeIndex === -1 ? 999 : aHomeIndex) - (bHomeIndex === -1 ? 999 : bHomeIndex);
+        }
+        const aAwayIndex = TEAM_A_PRIORITY_ORDER.indexOf(a.awayTeamId!);
+        const bAwayIndex = TEAM_A_PRIORITY_ORDER.indexOf(b.awayTeamId!);
+        return (aAwayIndex === -1 ? 999 : aAwayIndex) - (bAwayIndex === -1 ? 999 : bAwayIndex);
+      });
+      
+      console.log('Selected fixture (priority home + secondary away):', {
+        homeTeam: sorted[0].homeTeam?.name,
+        awayTeam: sorted[0].awayTeam?.name,
+        fixtureId: sorted[0].fixture.id
+      });
+      
+      return sorted[0];
+    }
+
+    // Rule 3: team_h in PRIORITY_TEAM_IDS (any away team)
+    const priorityHome = fixturesWithIds.filter(f => 
+      f.homeTeamId && PRIORITY_TEAM_IDS.includes(f.homeTeamId)
+    );
+
+    if (priorityHome.length > 0) {
+      console.log('Found fixtures with priority home team:', priorityHome.length);
+      // Sort by team_h priority order
+      const sorted = priorityHome.sort((a, b) => {
+        const aIndex = TEAM_H_PRIORITY_ORDER.indexOf(a.homeTeamId!);
+        const bIndex = TEAM_H_PRIORITY_ORDER.indexOf(b.homeTeamId!);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      });
+      
+      console.log('Selected fixture (priority home):', {
+        homeTeam: sorted[0].homeTeam?.name,
+        awayTeam: sorted[0].awayTeam?.name,
+        fixtureId: sorted[0].fixture.id
+      });
+      
+      return sorted[0];
+    }
+
+    // Rule 4: team_a in PRIORITY_TEAM_IDS (any home team)
+    const priorityAway = fixturesWithIds.filter(f => 
+      f.awayTeamId && PRIORITY_TEAM_IDS.includes(f.awayTeamId)
+    );
+
+    if (priorityAway.length > 0) {
+      console.log('Found fixtures with priority away team:', priorityAway.length);
+      // Sort by team_a priority (using reversed TEAM_H_PRIORITY_ORDER)
+      const sorted = priorityAway.sort((a, b) => {
+        const aIndex = TEAM_H_PRIORITY_ORDER.indexOf(a.awayTeamId!);
+        const bIndex = TEAM_H_PRIORITY_ORDER.indexOf(b.awayTeamId!);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      });
+      
+      console.log('Selected fixture (priority away):', {
+        homeTeam: sorted[0].homeTeam?.name,
+        awayTeam: sorted[0].awayTeam?.name,
+        fixtureId: sorted[0].fixture.id
+      });
+      
+      return sorted[0];
+    }
+
+    // Rule 5: Any team from SECONDARY_TEAM_IDS
+    const secondaryTeam = fixturesWithIds.filter(f => 
+      (f.homeTeamId && SECONDARY_TEAM_IDS.includes(f.homeTeamId)) ||
+      (f.awayTeamId && SECONDARY_TEAM_IDS.includes(f.awayTeamId))
+    );
+
+    if (secondaryTeam.length > 0) {
+      console.log('Found fixtures with secondary teams:', secondaryTeam.length);
+      console.log('Selected fixture (secondary teams):', {
+        homeTeam: secondaryTeam[0].homeTeam?.name,
+        awayTeam: secondaryTeam[0].awayTeam?.name,
+        fixtureId: secondaryTeam[0].fixture.id
+      });
+      
+      return secondaryTeam[0];
+    }
+
+    // Fallback: First available fixture
+    if (fixturesWithIds.length > 0) {
+      console.log('Using fallback: first available fixture');
+      console.log('Selected fixture (fallback):', {
+        homeTeam: fixturesWithIds[0].homeTeam?.name,
+        awayTeam: fixturesWithIds[0].awayTeam?.name,
+        fixtureId: fixturesWithIds[0].fixture.id
+      });
+      
+      return fixturesWithIds[0];
+    }
+
+    console.log('No fixtures available');
+    return null;
   };
 
   // Fetch available chips from FPL API for all users
@@ -295,19 +870,16 @@ export default function AdminTab() {
           setPayoutStructure(existingConfig.payoutStructure);
           setIsConfirmed(existingConfig.isConfirmed);
           
-          // If there's a confirmed configuration, show the summary page
+          // If there's a confirmed configuration, show the summary view
           if (existingConfig.isConfirmed) {
-            setCurrentPage('summary');
-            console.log('📋 AdminTab: Set to summary page');
+            console.log('📋 AdminTab: Configuration confirmed, showing summary view');
           } else {
-            // If there's an unconfirmed config, stay on configuration page
-            setCurrentPage('configuration');
-            console.log('⚙️ AdminTab: Set to configuration page');
+            // If there's an unconfirmed config, stay on configuration view
+            console.log('⚙️ AdminTab: Configuration unconfirmed, showing configuration view');
           }
         } else {
-          // No existing config found, start with configuration page
-          setCurrentPage('configuration');
-          console.log('🆕 AdminTab: No existing config, set to configuration page');
+          // No existing config found, start with configuration view
+          console.log('🆕 AdminTab: No existing config, starting with configuration view');
         }
       } catch (dbError: any) {
         console.error('❌ AdminTab: Database error loading config:', dbError);
@@ -672,10 +1244,8 @@ export default function AdminTab() {
     setConfigChanged(false);
     setError(null);
     
-    // Reset page to configuration if currently on payout structure or summary
-    if (currentPage === 'payoutStructure' || currentPage === 'summary') {
-      setCurrentPage('configuration');
-    }
+            // Reset page to league configuration
+        setCurrentPage('leagueConfiguration');
     
     // Clear any cached calculations or stored data
     fplApi.clearCache();
@@ -685,13 +1255,13 @@ export default function AdminTab() {
   const enterEditMode = () => {
     setIsEditMode(true);
     setEditablePayouts({ ...payoutStructure });
-    setCurrentPage('payoutStructure');
+            // Stay on league configuration page
   };
 
   const cancelEdit = () => {
     setIsEditMode(false);
     setEditablePayouts({ ...payoutStructure });
-    setCurrentPage('configuration');
+    // Stay on current page, just exit edit mode
   };
 
 
@@ -737,7 +1307,7 @@ export default function AdminTab() {
       setIsEditMode(false);
       setIsEditFinalized(false);
       setError(null);
-      setCurrentPage('summary');
+      // Stay on league configuration page
       console.log('Admin configuration saved successfully');
     } catch (err: any) {
       console.error('Error saving admin config:', err);
@@ -776,10 +1346,25 @@ export default function AdminTab() {
     );
     
     if (proceed) {
-      setCurrentPage('configuration');
+      // Enter edit mode for league configuration
       setIsConfirmed(false);
-      setIsEditMode(false);
+      setIsEditMode(true);
       setHasCalculated(false);
+      setError(null);
+    }
+  };
+
+  const handleEditPayoutStructure = () => {
+    const proceed = window.confirm(
+      '⚠️ Warning: Editing payout structure will allow you to adjust prize amounts.\n\n' +
+      'Make sure the total payouts equal the total prize pool.\n\n' +
+      'Do you want to proceed with editing the payout structure?'
+    );
+    
+    if (proceed) {
+      // Enter edit mode for payout structure
+      setIsEditMode(true);
+      setEditablePayouts({ ...payoutStructure });
       setError(null);
     }
   };
@@ -832,7 +1417,7 @@ export default function AdminTab() {
         setError(null);
         
         // Proceed to configuration
-        setCurrentPage('configuration');
+        // Stay on league configuration page
       } else {
         setLeagueVerificationError('League not found or invalid League ID');
       }
@@ -852,7 +1437,7 @@ export default function AdminTab() {
     setNewLeagueId('');
     setNewLeagueName('');
     setLeagueVerificationError(null);
-    setCurrentPage('summary');
+            // Stay on league configuration page
   };
 
   const updateEditablePayout = (field: keyof PayoutStructure, value: number | number[] | { [key: string]: number }) => {
@@ -951,26 +1536,62 @@ export default function AdminTab() {
 
   return (
     <div className="space-y-3 sm:space-y-4 max-w-6xl mx-auto">
-      {/* Compact Header - FPL-style sizing */}
-      <div className="text-center mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-extrabold mb-2 sm:mb-3 bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent drop-shadow-md">
-          ⚙️ Admin Panel
-        </h2>
-        <p className="text-sm sm:text-base lg:text-lg text-gray-600 font-medium">
-          Manage league configuration and payout structure
-        </p>
+      {/* Subtabs Navigation */}
+      <div className="flex justify-center mb-6">
+        <div className="flex bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setCurrentPage('leagueConfiguration')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              currentPage === 'leagueConfiguration'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            🏆 League Configuration
+          </button>
+          <button
+            onClick={() => setCurrentPage('scoreAndStrike')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              currentPage === 'scoreAndStrike'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            🎯 Score & Strike
+          </button>
+          <button
+            onClick={() => setCurrentPage('headsUpSetup')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              currentPage === 'headsUpSetup'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            🥊 Heads Up Setup
+          </button>
+          <button
+            onClick={() => setCurrentPage('weeklyUtility')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              currentPage === 'weeklyUtility'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            🔄 Weekly Utility
+          </button>
+        </div>
       </div>
 
       {/* Compact Error Display with Database Reset Options - FPL-style sizing */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-          <div className="text-red-600 mb-2 sm:mb-3 text-sm sm:text-base font-medium">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 sm:p-5 mb-4 sm:mb-5">
+          <div className="text-red-600 mb-3 sm:mb-4 text-base sm:text-lg font-medium">{error}</div>
           {(error.includes('Database version conflict') || error.includes('Database connection timed out')) && (
-            <div className="mt-2 sm:mt-3">
-              <p className="text-xs sm:text-sm text-red-700 mb-2 sm:mb-3">
+            <div className="mt-3 sm:mt-4">
+              <p className="text-sm sm:text-base text-red-700 mb-3 sm:mb-4">
                 This is a database issue. Try clearing your browser's IndexedDB:
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={async () => {
                     try {
@@ -983,7 +1604,7 @@ export default function AdminTab() {
                       alert(`Failed to clear database: ${err.message || 'Unknown error'}`);
                     }
                   }}
-                  className="px-3 sm:px-4 py-2 sm:py-3 bg-red-600 text-white rounded hover:bg-red-700 text-xs sm:text-sm font-semibold touch-target"
+                  className="px-4 sm:px-5 py-3 sm:py-4 bg-red-600 text-white rounded hover:bg-red-700 text-sm sm:text-base font-semibold touch-target"
                 >
                   Clear Database Data
                 </button>
@@ -999,7 +1620,7 @@ export default function AdminTab() {
                       alert(`Failed to delete database: ${err.message || 'Unknown error'}`);
                     }
                   }}
-                  className="px-3 sm:px-4 py-2 sm:py-3 bg-red-800 text-white rounded hover:bg-red-900 text-xs sm:text-sm font-semibold touch-target"
+                  className="px-4 sm:px-5 py-3 sm:py-4 bg-red-800 text-white rounded hover:bg-red-900 text-sm sm:text-base font-semibold touch-target"
                 >
                   Delete Database (Nuclear Option)
                 </button>
@@ -1009,92 +1630,826 @@ export default function AdminTab() {
         </div>
       )}
 
-      {/* Compact League Configuration Summary - FPL-style sizing */}
-      {currentPage === 'summary' && (
-        <div className="bg-white rounded-lg p-3 sm:p-4 border mb-3 sm:mb-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 sm:mb-3 gap-2 sm:gap-0">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800">League Configuration Summary</h3>
-            <div className="flex gap-2">
+      {/* League Configuration Tab Content */}
+      {currentPage === 'leagueConfiguration' && !isEditMode && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">League Configuration</h2>
+                <p className="text-blue-100 text-sm">Current league setup and prize distribution</p>
+              </div>
               <button
                 onClick={handleEditLeagueConfig}
-                className="px-3 sm:px-4 py-2 sm:py-3 bg-gray-600 text-white rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors touch-target font-medium"
+                className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-md flex items-center gap-2 self-start"
                 title="Edit current league configuration"
               >
-                ✏️ Edit Current
+                <span className="text-lg">✏️</span>
+                <span>Edit Configuration</span>
               </button>
             </div>
           </div>
           
-          {/* Compact Summary Layout - FPL-style sizing */}
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-3 sm:p-4 rounded-lg border border-gray-200">
-            {/* Mobile: Full-width stacked, Desktop: Grid layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
-              {/* League Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Name:</span>
-                <span className="text-xs sm:text-sm font-semibold text-blue-900">
+          {/* Content Section */}
+          <div className="p-6">
+            {/* League Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {/* League Details Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl border border-blue-200">
+                <h3 className="font-semibold text-blue-800 mb-4 flex items-center gap-2 text-lg">
+                  <span className="text-xl">🏆</span>
+                  League Details
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Name:</span>
+                    <span className="font-bold text-blue-900 text-right max-w-[60%] break-words">
                   {currentLeagueInfo?.leagueName || 'Ordinary Gentlemen'}
                 </span>
               </div>
-
-              {/* Participants */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Participants:</span>
-                <span className="text-xs sm:text-sm font-semibold text-green-700">{totalManagers}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Participants:</span>
+                    <span className="font-bold text-blue-900 text-xl">{totalManagers}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">Entry Fee:</span>
+                    <span className="font-bold text-green-700 text-lg">
+                      {formatCurrency(parseFloat(managerEntryFee || '0'))}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Total Prize Pool */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Total Pool:</span>
-                <span className="text-xs sm:text-sm font-semibold text-purple-700">
+              {/* Total Pool Card */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200">
+                <h3 className="font-semibold text-green-800 mb-4 flex items-center gap-2 text-lg">
+                  <span className="text-xl">💰</span>
+                  Total Prize Pool
+                </h3>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-green-800 mb-2">
                   {formatCurrency(parseFloat(managerEntryFee || '0') * parseInt(totalManagers || '0'))}
-                </span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {totalManagers} × {formatCurrency(parseFloat(managerEntryFee || '0'))}
+                  </div>
+                </div>
               </div>
 
-              {/* League Winners */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Winners:</span>
-                <span className="text-xs sm:text-sm font-semibold text-yellow-700">
+              {/* Status Card */}
+              <div className={`bg-gradient-to-br p-5 rounded-xl border ${
+                isConfirmed 
+                  ? 'from-green-50 to-green-100 border-green-200' 
+                  : 'from-yellow-50 to-yellow-100 border-yellow-200'
+              }`}>
+                <h3 className={`font-semibold mb-4 flex items-center gap-2 text-lg ${
+                  isConfirmed ? 'text-green-800' : 'text-yellow-800'
+                }`}>
+                  <span className="text-xl">{isConfirmed ? '✅' : '⚠️'}</span>
+                  Configuration Status
+                </h3>
+                <div className="text-center">
+                  <div className={`text-xl font-bold mb-2 ${
+                    isConfirmed ? 'text-green-800' : 'text-yellow-800'
+                  }`}>
+                    {isConfirmed ? 'Confirmed' : 'Pending'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {isConfirmed ? 'Ready for season' : 'Needs confirmation'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prize Distribution Section */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <span className="text-2xl">🎯</span>
+                Prize Distribution Breakdown
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Season Winners */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 text-center hover:shadow-md transition-shadow">
+                  <div className="text-yellow-600 text-3xl mb-3">🏆</div>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Season Winners</div>
+                  <div className="text-xl font-bold text-yellow-700 mb-2">
                   {formatCurrency(payoutStructure.top20Winners.reduce((sum, payout) => sum + payout, 0))}
-                </span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Top {Math.floor(parseInt(totalManagers || '0') * 0.20)} positions
+                  </div>
               </div>
 
               {/* Score & Strike */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Score & Strike:</span>
-                <span className="text-xs sm:text-sm font-semibold text-red-700">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 text-center hover:shadow-md transition-shadow">
+                  <div className="text-red-600 text-3xl mb-3">🎯</div>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Score & Strike</div>
+                  <div className="text-xl font-bold text-red-700 mb-2">
                   {formatCurrency(payoutStructure.scoreNStrike * parseInt(scoreStrikeWeeks || '0'))}
-                </span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatCurrency(payoutStructure.scoreNStrike)} × {scoreStrikeWeeks} weeks
+                  </div>
               </div>
 
-              {/* Weekly */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Weekly:</span>
-                <span className="text-xs sm:text-sm font-semibold text-indigo-700">
+                {/* Weekly Winners */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 text-center hover:shadow-md transition-shadow">
+                  <div className="text-indigo-600 text-3xl mb-3">⚡</div>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Weekly Winners</div>
+                  <div className="text-xl font-bold text-indigo-700 mb-2">
                   {formatCurrency(payoutStructure.weeklyWinner * parseInt(weeklyWinnerWeeks || '0'))}
-                </span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {formatCurrency(payoutStructure.weeklyWinner)} × {weeklyWinnerWeeks} weeks
+                  </div>
               </div>
 
-              {/* Chips */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Chips:</span>
-                <span className="text-xs sm:text-sm font-semibold text-pink-700">
+                {/* Chip Usage */}
+                <div className="bg-white p-5 rounded-xl border border-gray-200 text-center hover:shadow-md transition-shadow">
+                  <div className="text-pink-600 text-3xl mb-3">🎮</div>
+                  <div className="text-sm text-gray-600 mb-2 font-medium">Chip Bonuses</div>
+                  <div className="text-xl font-bold text-pink-700 mb-2">
                   {formatCurrency(Object.values(payoutStructure.chipUsage).reduce((sum, amount) => sum + amount, 0))}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {Object.keys(payoutStructure.chipUsage).length} chip types
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Balance Check */}
+              {payoutStructure.top20Winners.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-300">
+                  <div className="flex justify-between items-center text-center">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-600 font-medium">Total Pool</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(parseFloat(managerEntryFee || '0') * parseInt(totalManagers || '0'))}
+                      </div>
+                    </div>
+                    <div className="text-3xl text-gray-400 mx-4">=</div>
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-600 font-medium">Total Payouts</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {formatCurrency(
+                          payoutStructure.top20Winners.reduce((sum, payout) => sum + payout, 0) +
+                          (payoutStructure.scoreNStrike * parseInt(scoreStrikeWeeks || '0')) +
+                          (payoutStructure.weeklyWinner * parseInt(weeklyWinnerWeeks || '0')) +
+                          Object.values(payoutStructure.chipUsage).reduce((sum, amount) => sum + amount, 0)
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-center mt-3">
+                                          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        <span>✓</span>
+                        Prize distribution balanced
                 </span>
+              </div>
+            </div>
+                )}
+          </div>
+        </div>
+
+          {/* Payout Structure Display */}
+          {payoutStructure.top20Winners.length > 0 && (
+            <div className="mt-8 bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <span className="text-2xl">💰</span>
+                  Detailed Payout Structure
+                </h3>
+                {!isEditMode && (
+                  <button
+                    onClick={handleEditPayoutStructure}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm font-medium"
+                    title="Edit payout structure"
+                  >
+                    ✏️ Edit Payouts
+                  </button>
+                )}
+              </div>
+              
+              {/* Top 20% Winners */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-800 mb-3">Top 20% Winners</h4>
+                <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {payoutStructure.top20Winners.map((payout, index) => (
+                    <div key={index} className="text-center">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {index + 1}{getOrdinalSuffix(index + 1)}
+                      </label>
+                      <div className="px-2 py-2 bg-white border border-gray-200 rounded text-center text-sm font-medium text-gray-900">
+                        {formatCurrency(payout || 0)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Side Contest Prizes */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-800 mb-3">Side Contest Prizes</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      💥 Score & Strike (Per Week)
+                    </label>
+                    <div className="px-3 py-2 bg-white border border-gray-200 rounded text-base font-medium text-gray-900">
+                      {formatCurrency(payoutStructure.scoreNStrike || 0)}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ⚡ Weekly Winner (Per Week)
+                    </label>
+                    <div className="px-3 py-2 bg-white border border-gray-200 rounded text-base font-medium text-gray-900">
+                      {formatCurrency(payoutStructure.weeklyWinner || 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chip Usage Prizes */}
+              <div className="mb-6">
+                <h4 className="text-lg font-medium text-gray-800 mb-3">🎯 Chip Usage Prizes</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(payoutStructure.chipUsage).map(([chipName, amount]) => (
+                    <div key={chipName}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {chipName}
+                      </label>
+                      <div className="px-3 py-2 bg-white border border-gray-200 rounded text-base font-medium text-gray-900">
+                        {formatCurrency(amount || 0)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+
+        </div>
+      )}
+
+      {/* Score and Strike Management */}
+      {currentPage === 'scoreAndStrike' && (
+        <div className="bg-white rounded-lg p-4 sm:p-5 lg:p-6 border">
+          <div className="mb-4 sm:mb-5">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800">🎯 Score & Strike Management</h3>
+          </div>
+          
+
+
+          {/* Gameweek Selection */}
+          <div className="mb-6">
+            <label className="block text-base font-medium text-gray-700 mb-3">
+              Select Gameweek
+            </label>
+            <select
+              value={selectedGameweek}
+              onChange={(e) => handleGameweekChange(parseInt(e.target.value))}
+              className="w-full md:w-64 px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+            >
+              {gameweeks.map((gw) => (
+                <option key={gw.id} value={gw.id}>
+                  GW {gw.id} - {gw.name}
+                </option>
+              ))}
+            </select>
+
+          </div>
+
+          {/* Loading State */}
+          {loadingScoreStrike && (
+            <div className="text-center py-8">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading Score and Strike data...</p>
+            </div>
+          )}
+
+
+
+          {/* Score and Strike Entries Table */}
+          {!loadingScoreStrike && leagueStandings.length > 0 && (
+            <div className="space-y-4">
+              {/* Entries Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full border border-gray-200 rounded-lg">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Manager Name</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Fixture</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Home Goals</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Away Goals</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Goalscorer</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 border-b">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leagueStandings.map((manager) => {
+                      const existingEntry = scoreStrikeEntries.find(
+                        entry => entry.manager_fplid === manager.entry && entry.gameweek === selectedGameweek
+                      );
+                      
+                      return (
+                        <tr key={manager.entry} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div>
+                              <div className="font-medium text-gray-900">{manager.player_name}</div>
+                              <div className="text-sm text-gray-500">{manager.entry_name}</div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const priorityFixture = getPriorityFixture(manager, selectedGameweek);
+                              if (priorityFixture) {
+                                // Auto-set the fixture ID in form data
+                                if (!entryFormData[manager.entry]?.fixtureId && !existingEntry?.fixture_id) {
+                                  setTimeout(() => updateEntryFormData(manager.entry, 'fixtureId', priorityFixture.fixture.id), 0);
+                                }
+                                
+                                return (
+                                  <div className="text-sm">
+                                    <div className="font-medium text-gray-900">
+                                      {priorityFixture.homeTeam?.name || `Team ${priorityFixture.fixture.team_h}`} vs {priorityFixture.awayTeam?.name || `Team ${priorityFixture.fixture.team_a}`}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Game Engine Selection
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div className="text-sm text-gray-500">
+                                  No fixtures available
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              className="w-20 px-3 py-2 border border-gray-300 rounded text-center text-sm"
+                              value={entryFormData[manager.entry]?.homeGoals || existingEntry?.home_goal || 0}
+                              onChange={(e) => updateEntryFormData(manager.entry, 'homeGoals', parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              className="w-20 px-3 py-2 border border-gray-300 rounded text-center text-sm"
+                              value={entryFormData[manager.entry]?.awayGoals || existingEntry?.away_goal || 0}
+                              onChange={(e) => updateEntryFormData(manager.entry, 'awayGoals', parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                              value={entryFormData[manager.entry]?.playerName || existingEntry?.player_name || ''}
+                              onChange={(e) => updateEntryFormData(manager.entry, 'playerName', e.target.value)}
+                            >
+                              <option value="">Select Player</option>
+                              {players
+                                .filter(player => {
+                                  // Filter players by teams in the priority fixture
+                                  const priorityFixture = getPriorityFixture(manager, selectedGameweek);
+                                  if (!priorityFixture) return false;
+                                  return player.team === priorityFixture.fixture.team_h || player.team === priorityFixture.fixture.team_a;
+                                })
+                                .map((player) => (
+                                  <option key={player.id} value={player.web_name}>
+                                    {player.web_name} ({teams.find(t => t.id === player.team)?.name || `Team ${player.team}`})
+                                  </option>
+                                ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => {
+                                const priorityFixture = getPriorityFixture(manager, selectedGameweek);
+                                if (!priorityFixture) {
+                                  alert('No priority fixture available for this gameweek');
+                                  return;
+                                }
+                                
+                                const formData = entryFormData[manager.entry];
+                                if (formData) {
+                                  const { homeGoals, awayGoals, playerName } = formData;
+                                  
+                                  if (homeGoals > 0 || awayGoals > 0) {
+                                    saveScoreStrikeEntry(manager.entry, priorityFixture.fixture.id, homeGoals, awayGoals, playerName);
+                                  } else {
+                                    alert('Please enter valid scores (at least one goal)');
+                                  }
+                                } else {
+                                  alert('Please fill in all fields before saving');
+                                }
+                              }}
+                              className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                            >
+                              💾 Save
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* No Data State */}
+          {!loadingScoreStrike && leagueStandings.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500 text-xl mb-4">📊</div>
+              <p className="text-lg font-semibold text-gray-600">No league standings found</p>
+              <p className="text-sm text-gray-500 mt-2">Please ensure the league is properly configured</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Heads Up Setup Tab Content */}
+      {currentPage === 'headsUpSetup' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-red-600 to-orange-600 px-6 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Heads Up Setup</h2>
+                <p className="text-red-100 text-sm">Configure weekly heads-up games between league managers</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Content Section */}
+          <div className="p-6">
+            {!headsUpConfigConfirmed ? (
+              /* Configuration Form */
+              <div className="space-y-6">
+                {/* Entry Amount */}
+                <div className="max-w-md">
+                  <label className="block text-base font-medium text-gray-700 mb-3">
+                    💰 Entry Amount (per manager)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={headsUpEntryAmount}
+                      onChange={(e) => setHeadsUpEntryAmount(e.target.value)}
+                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-base"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">Enter the amount each manager pays to participate</p>
+                </div>
+
+                {/* Manager Selection */}
+                <div>
+                  <label className="block text-base font-medium text-gray-700 mb-3">
+                    👥 Select Managers
+                  </label>
+                  <p className="text-sm text-gray-600 mb-4">Choose at least 2 managers for heads-up games</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {leagueStandings.map((manager) => (
+                      <div key={manager.entry} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`manager-${manager.entry}`}
+                          checked={selectedHeadsUpManagers.includes(manager.entry)}
+                          onChange={() => handleManagerSelection(manager.entry)}
+                          className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor={`manager-${manager.entry}`} className="ml-3 text-sm font-medium text-gray-700">
+                          {manager.player_name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {selectedHeadsUpManagers.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <span className="font-medium">Selected:</span> {selectedHeadsUpManagers.length} manager(s)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={confirmHeadsUpConfig}
+                    disabled={!headsUpEntryAmount || parseFloat(headsUpEntryAmount) <= 0 || selectedHeadsUpManagers.length < 2}
+                    className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-md"
+                  >
+                    ✅ Confirm Configuration
+                  </button>
+                  
+                  <button
+                    onClick={resetHeadsUpConfig}
+                    className="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                  >
+                    🔄 Reset
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Configuration Summary */
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Heads Up Configuration Confirmed!</h3>
+                  <p className="text-gray-600">Weekly heads-up games are now active</p>
+                </div>
+
+                {/* Configuration Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <span className="text-2xl">💰</span>
+                      Entry Amount
+                    </h4>
+                    <div className="text-3xl font-bold text-green-600">
+                      {formatCurrency(headsUpConfig?.entryAmount || 0)}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">Per manager per week</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <span className="text-2xl">👥</span>
+                      Participating Managers
+                    </h4>
+                    <div className="text-3xl font-bold text-blue-600">
+                      {headsUpConfig?.managers.length || 0}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">Active participants</p>
+                  </div>
+                </div>
+
+                {/* Manager List */}
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-4">Selected Managers</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {headsUpConfig?.managers.map((managerId) => {
+                      const manager = leagueStandings.find(m => m.entry === managerId);
+                      return (
+                        <div key={managerId} className="flex items-center p-3 bg-white rounded-lg border border-gray-200">
+                          <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                          <span className="font-medium text-gray-800">
+                            {manager?.player_name || `Manager ${managerId}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={resetHeadsUpConfig}
+                    className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors shadow-md"
+                  >
+                    🔄 Reset Configuration
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly Utility Tab Content */}
+      {currentPage === 'weeklyUtility' && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-green-600 to-blue-600 px-6 py-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Weekly Utility</h2>
+                <p className="text-green-100 text-sm">Import and manage weekly data from FPL API</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Content Section */}
+          <div className="p-6">
+            <div className="space-y-6">
+              {/* Import Section */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🔄</span>
+                  Import Weekly Data from FPL API
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-medium text-blue-800 mb-2">What this does:</h4>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Fetches current gameweek from FPL API bootstrap endpoint</li>
+                      <li>• Imports league standings for the current gameweek</li>
+                      <li>• Stores data in weeklyWinners table with all required columns</li>
+                      <li>• Ensures unique entries per gameweek + manager combination</li>
+                      <li>• Automatically overwrites existing data for the same gameweek</li>
+                      <li>• Marks new entries as current gameweek</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h4 className="font-medium text-yellow-800 mb-2">⚠️ Important Notes:</h4>
+                    <ul className="text-sm text-yellow-700 space-y-1">
+                      <li>• This will automatically overwrite existing data for the current gameweek</li>
+                      <li>• Only run this after FPL gameweek results are final</li>
+                      <li>• Each manager can have only one entry per gameweek</li>
+                      <li>• Previous gameweek data is preserved and marked as not current</li>
+                      <li>• League ID: {selectedLeagueId}</li>
+                      <li>• Data source: FPL API league standings endpoint</li>
+                    </ul>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <button
+                      onClick={importWeeklyDataFromFPL}
+                      disabled={importingWeeklyData}
+                      className={`px-8 py-4 text-lg font-semibold rounded-lg transition-colors shadow-lg ${
+                        importingWeeklyData
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {importingWeeklyData ? (
+                        <div className="flex items-center gap-3">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                          <span>Importing...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">🚀</span>
+                          <span>Import Weekly Data</span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Import Results */}
+              {importResult && (
+                <div className={`rounded-lg p-6 border-2 ${
+                  importResult.success 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`text-2xl ${
+                      importResult.success ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {importResult.success ? '✅' : '❌'}
+                    </div>
+                    <h3 className={`text-lg font-semibold ${
+                      importResult.success ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      {importResult.success ? 'Import Successful' : 'Import Failed'}
+                    </h3>
+                  </div>
+                  
+                  <p className={`text-base ${
+                    importResult.success ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {importResult.message}
+                  </p>
+                  
+                  {importResult.success && importResult.importedCount && (
+                    <div className="mt-4 p-4 bg-white rounded-lg border border-green-200">
+                      <div className="grid grid-cols-2 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {importResult.importedCount}
+                          </div>
+                          <div className="text-sm text-green-700">Entries Imported</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            GW {importResult.gameweek}
+                          </div>
+                          <div className="text-sm text-blue-700">Gameweek</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Current Weekly Winners Data */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">📊</span>
+                  Current Weekly Winners Data
+                </h3>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          GameWeek
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Manager Name
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          FPL ID
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Score
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Is Current
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {weeklyWinners.length > 0 ? (
+                        weeklyWinners
+                          .sort((a, b) => b.gameweek - a.gameweek || b.managerScore - a.managerScore)
+                          .slice(0, 20) // Show top 20 entries
+                          .map((winner) => (
+                            <tr key={winner.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                GW {winner.gameweek}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                {winner.managerName}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                {winner.managerFplId}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                <span className="font-medium">{winner.managerScore}</span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  winner.isCurrent 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {winner.isCurrent ? 'Yes' : 'No'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                            <div className="text-xl mb-2">📊</div>
+                            <p>No weekly winners data found</p>
+                            <p className="text-sm mt-1">Use the import button above to fetch data from FPL API</p>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {weeklyWinners.length > 20 && (
+                  <div className="mt-4 text-center text-sm text-gray-500">
+                    Showing top 20 entries. Total entries: {weeklyWinners.length}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Compact Input Fields - FPL-style sizing */}
-      {currentPage === 'configuration' && (
-        <div className="bg-white rounded-lg p-3 sm:p-4 lg:p-6 border">
-          <h3 className="text-base sm:text-lg lg:text-xl font-semibold mb-3 sm:mb-4">League Configuration</h3>
+      {/* Configuration Form - Only show when editing */}
+      {currentPage === 'leagueConfiguration' && isEditMode && (
+        <div className="bg-white rounded-lg p-4 sm:p-5 lg:p-6 border">
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-semibold mb-4 sm:mb-5">League Configuration</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-5 sm:mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-base font-medium text-gray-700 mb-3">
               Manager Entry Fee
             </label>
             <div>
@@ -1105,15 +2460,15 @@ export default function AdminTab() {
                   setManagerEntryFee(e.target.value);
                   setConfigChanged(true);
                 }}
-                disabled={isEditMode || isConfirmed}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                disabled={!isEditMode || isConfirmed}
+                className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-base"
                 placeholder="0.00"
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-base font-medium text-gray-700 mb-3">
               Total Managers
             </label>
             <input
@@ -1131,14 +2486,14 @@ export default function AdminTab() {
                   e.preventDefault();
                 }
               }}
-              disabled={isEditMode || isConfirmed}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              disabled={!isEditMode || isConfirmed}
+              className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-base"
               placeholder="0"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-base font-medium text-gray-700 mb-3">
               Score and Strike
             </label>
             <input
@@ -1156,14 +2511,14 @@ export default function AdminTab() {
                   e.preventDefault();
                 }
               }}
-              disabled={isEditMode || isConfirmed}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              disabled={!isEditMode || isConfirmed}
+              className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-base"
               placeholder="38"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-base font-medium text-gray-700 mb-3">
               Weekly
             </label>
             <input
@@ -1181,14 +2536,14 @@ export default function AdminTab() {
                   e.preventDefault();
                 }
               }}
-              disabled={isEditMode || isConfirmed}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              disabled={!isEditMode || isConfirmed}
+              className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-base"
               placeholder="38"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-base font-medium text-gray-700 mb-3">
               Chips
             </label>
             <input
@@ -1206,8 +2561,8 @@ export default function AdminTab() {
                   e.preventDefault();
                 }
               }}
-              disabled={isEditMode || isConfirmed}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              disabled={!isEditMode || isConfirmed}
+              className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 text-base"
               placeholder="3"
             />
           </div>
@@ -1215,17 +2570,17 @@ export default function AdminTab() {
 
         {/* Chip Names */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-base font-medium text-gray-700 mb-3">
             Chip Names
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {chipNames.map((name, index) => (
               <div key={index}>
                 <select
                   value={name}
                   onChange={(e) => updateChipName(index, e.target.value)}
-                  disabled={isEditMode || isConfirmed}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 bg-white text-gray-900 [appearance:none] bg-[length:12px_8px] bg-[right_12px_center] bg-no-repeat pr-10"
+                  disabled={!isEditMode || isConfirmed}
+                  className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 bg-white text-gray-900 text-base [appearance:none] bg-[length:16px_12px] bg-[right_16px_center] bg-no-repeat pr-12"
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`
                   }}
@@ -1236,7 +2591,7 @@ export default function AdminTab() {
                       key={chip} 
                       value={chip}
                       disabled={chipNames.includes(chip) && chip !== name}
-                      className="py-2 px-3 hover:bg-blue-50"
+                      className="py-3 px-4 hover:bg-blue-50 text-base"
                     >
                       {chip}
                     </option>
@@ -1248,11 +2603,11 @@ export default function AdminTab() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           <button
             onClick={hasCalculated ? recalculatePayoutStructure : calculatePayoutStructure}
-            disabled={(!isFormValid() && !configChanged) || isEditMode || isConfirmed}
-            className={`px-4 py-2 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed ${
+            disabled={(!isFormValid() && !configChanged) || !isEditMode || isConfirmed}
+            className={`px-5 py-3 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed text-base font-medium ${
               hasCalculated 
                 ? 'bg-green-600 hover:bg-green-700' 
                 : 'bg-blue-600 hover:bg-blue-700'
@@ -1263,8 +2618,8 @@ export default function AdminTab() {
           
           <button
             onClick={clearAll}
-            disabled={isEditMode || isConfirmed}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+            disabled={!isEditMode || isConfirmed}
+            className="px-5 py-3 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed text-base font-medium"
           >
             Clear
           </button>
@@ -1272,8 +2627,8 @@ export default function AdminTab() {
           {payoutStructure.top20Winners.length > 0 && (
             <button
               onClick={enterEditMode}
-              disabled={isConfirmed || isEditMode}
-              className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isConfirmed || !isEditMode}
+              className="px-5 py-3 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-base font-medium"
             >
               ✏️ Edit Payout Structure
             </button>
@@ -1288,14 +2643,14 @@ export default function AdminTab() {
                 const calculatedPayouts = getTotalPayouts();
                 return Math.abs(totalPrizePool - calculatedPayouts) > 1 || isConfirmed;
               })()}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-5 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-base font-medium"
             >
               ✓ Confirm
             </button>
           )}
 
           {/* Cancel Button - Only show when adding a new league */}
-          {currentPage === 'configuration' && newLeagueId && (
+          {currentPage === 'leagueConfiguration' && newLeagueId && (
             <button
               onClick={() => {
                 const proceed = window.confirm(
@@ -1307,14 +2662,14 @@ export default function AdminTab() {
                 
                 if (proceed) {
                   // Reset to league verification screen
-                  setCurrentPage('addLeague');
+                  setCurrentPage('leagueConfiguration');
                   setNewLeagueId('');
                   setNewLeagueName('');
                   setLeagueVerificationError(null);
                   setVerifyingLeague(false);
                 }
               }}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+              className="px-5 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-base font-medium"
               title="Cancel and return to league verification"
             >
               ❌ Cancel Configuration
@@ -1326,14 +2681,14 @@ export default function AdminTab() {
 
       {/* Error Display */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="text-red-800 mb-3">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-5">
+          <div className="text-red-800 mb-4 text-base">{error}</div>
           {error.includes('VersionError') && (
-            <div className="mt-3">
-              <p className="text-sm text-red-700 mb-2">
+            <div className="mt-4">
+              <p className="text-base text-red-700 mb-3">
                 This is a database version conflict. Try clearing your browser's IndexedDB:
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={async () => {
                     try {
@@ -1344,7 +2699,7 @@ export default function AdminTab() {
                       console.error('Error clearing database:', err);
                     }
                   }}
-                  className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                  className="px-4 py-2 bg-red-600 text-white rounded text-base hover:bg-red-700"
                 >
                   Clear Database Data
                 </button>
@@ -1358,7 +2713,7 @@ export default function AdminTab() {
                       console.error('Error deleting database:', err);
                     }
                   }}
-                  className="px-3 py-1.5 bg-red-800 text-white rounded text-sm hover:bg-red-900"
+                  className="px-4 py-2 bg-red-800 text-white rounded text-base hover:bg-red-900"
                 >
                   Delete Database (Nuclear Option)
                 </button>
@@ -1381,13 +2736,13 @@ export default function AdminTab() {
             : `Subtract ${formatCurrency(absDifference)} from payouts`;
           
           return (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <div className="text-yellow-800">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-5 mb-5">
+              <div className="text-yellow-800 text-base">
                 <strong>⚠️ Payout Mismatch:</strong> Calculated Payout Amounts ({formatCurrency(calculatedPayouts)}) ≠ Total Prize Pool ({formatCurrency(totalPrizePool)})
                 <br />
-                <span className="text-sm font-medium">{differenceText}</span>
+                <span className="text-base font-medium">{differenceText}</span>
                 <br />
-                <span className="text-sm">Click "Edit" to adjust winnings and balance the totals.</span>
+                <span className="text-base">Click "Edit" to adjust winnings and balance the totals.</span>
               </div>
             </div>
           );
@@ -1396,14 +2751,14 @@ export default function AdminTab() {
       })()}
 
       {/* Payout Structure Display */}
-      {currentPage === 'payoutStructure' && payoutStructure.top20Winners.length > 0 && (
-        <div className="bg-white rounded-lg p-4 border shadow-sm">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-lg font-semibold">Payout Structure</h3>
+      {currentPage === 'leagueConfiguration' && payoutStructure.top20Winners.length > 0 && (
+        <div className="bg-white rounded-lg p-5 border shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">Payout Structure</h3>
             {isConfirmed && !isEditMode && (
               <button
                 onClick={handleEditAfterConfirm}
-                className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
                 title="Edit payout structure"
               >
                 ✏️
@@ -1412,12 +2767,12 @@ export default function AdminTab() {
           </div>
           
           {/* Top 20% Winners */}
-          <div className="mb-4">
-            <h4 className="text-base font-medium text-gray-800 mb-2">Top 20% Winners</h4>
-            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+          <div className="mb-5">
+            <h4 className="text-lg font-medium text-gray-800 mb-3">Top 20% Winners</h4>
+            <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-3">
               {(isEditMode ? editablePayouts : payoutStructure).top20Winners.map((payout, index) => (
                 <div key={index} className="text-center">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     {index + 1}{getOrdinalSuffix(index + 1)}
                   </label>
                   <input
@@ -1429,7 +2784,7 @@ export default function AdminTab() {
                       }
                     }}
                     disabled={!isEditMode || isConfirmed}
-                    className="w-full px-1 py-1 border border-gray-300 rounded text-center text-xs disabled:bg-gray-100"
+                    className="w-full px-2 py-2 border border-gray-300 rounded text-center text-sm disabled:bg-gray-100"
                     title={isEditMode ? (() => {
                       const suggestion = getSuggestionForField(`winner_${index}`, editablePayouts.top20Winners[index]);
                       return suggestion ? `💡 Add ${formatCurrency(suggestion)} to balance totals` : '';
@@ -1441,11 +2796,11 @@ export default function AdminTab() {
           </div>
 
           {/* Side Contest Prizes */}
-          <div className="mb-4">
-            <h4 className="text-base font-medium text-gray-800 mb-2">Side Contest Prizes</h4>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="mb-5">
+            <h4 className="text-lg font-medium text-gray-800 mb-3">Side Contest Prizes</h4>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   💥 Score & Strike (Per Week)
                 </label>
                 <input
@@ -1457,7 +2812,7 @@ export default function AdminTab() {
                     }
                   }}
                   disabled={!isEditMode || isConfirmed}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-base disabled:bg-gray-100"
                   title={isEditMode ? (() => {
                     const suggestion = getSuggestionForField('scoreNStrike', editablePayouts.scoreNStrike);
                     return suggestion ? `💡 Add ${formatCurrency(suggestion)} to balance totals` : '';
@@ -1466,7 +2821,7 @@ export default function AdminTab() {
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   ⚡ Weekly Winner (Per Week)
                 </label>
                 <input
@@ -1478,7 +2833,7 @@ export default function AdminTab() {
                     }
                   }}
                   disabled={!isEditMode || isConfirmed}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm disabled:bg-gray-100"
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-base disabled:bg-gray-100"
                   title={isEditMode ? (() => {
                     const suggestion = getSuggestionForField('weeklyWinner', editablePayouts.weeklyWinner);
                     return suggestion ? `💡 Add ${formatCurrency(suggestion)} to balance totals` : '';
@@ -1489,12 +2844,12 @@ export default function AdminTab() {
           </div>
 
           {/* Chip Usage Prizes */}
-          <div className="mb-4">
-            <h4 className="text-base font-medium text-gray-800 mb-2">🎯 Chip Usage Prizes</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="mb-5">
+            <h4 className="text-lg font-medium text-gray-800 mb-3">🎯 Chip Usage Prizes</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Object.entries(isEditMode ? editablePayouts.chipUsage : payoutStructure.chipUsage).map(([chipName, amount]) => (
                 <div key={chipName}>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     {chipName}
                   </label>
                   <input
@@ -1506,7 +2861,7 @@ export default function AdminTab() {
                       }
                     }}
                     disabled={!isEditMode || isConfirmed}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs disabled:bg-gray-100"
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm disabled:bg-gray-100"
                     title={isEditMode ? (() => {
                       const suggestion = getSuggestionForField('chipUsage', amount);
                       return suggestion ? `💡 Add ${formatCurrency(suggestion)} to balance totals` : '';
@@ -1518,60 +2873,60 @@ export default function AdminTab() {
           </div>
 
           {/* Payout Breakdown */}
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <h4 className="text-base font-medium text-gray-800 mb-2">Payout Breakdown</h4>
+          <div className="mt-5 pt-4 border-t border-gray-200">
+            <h4 className="text-lg font-medium text-gray-800 mb-3">Payout Breakdown</h4>
             
             {/* Compact Totals Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <div className="text-center">
-                <span className="text-xs text-gray-600">Season Winners:</span>
-                <div className="text-sm font-semibold text-blue-600">
+                <span className="text-sm text-gray-600">Season Winners:</span>
+                <div className="text-base font-semibold text-blue-600">
                   {formatCurrency((isEditMode ? editablePayouts : payoutStructure).top20Winners.reduce((sum, payout) => sum + payout, 0))}
                 </div>
               </div>
               
               <div className="text-center">
-                <span className="text-xs text-gray-600">Score & Strike:</span>
-                <div className="text-sm font-semibold text-purple-600">
+                <span className="text-sm text-gray-600">Score & Strike:</span>
+                <div className="text-base font-semibold text-purple-600">
                   {formatCurrency((isEditMode ? editablePayouts : payoutStructure).scoreNStrike * parseInt(scoreStrikeWeeks || '0'))}
                 </div>
               </div>
               
               <div className="text-center">
-                <span className="text-xs text-gray-600">Weekly Winner:</span>
-                <div className="text-sm font-semibold text-orange-600">
+                <span className="text-sm text-gray-600">Weekly Winner:</span>
+                <div className="text-base font-semibold text-orange-600">
                   {formatCurrency((isEditMode ? editablePayouts : payoutStructure).weeklyWinner * parseInt(weeklyWinnerWeeks || '0'))}
                 </div>
               </div>
               
               <div className="text-center">
-                <span className="text-xs text-gray-600">Chip Usage:</span>
-                <div className="text-sm font-semibold text-green-600">
+                <span className="text-sm text-gray-600">Chip Usage:</span>
+                <div className="text-base font-semibold text-green-600">
                   {formatCurrency(Object.values((isEditMode ? editablePayouts : payoutStructure).chipUsage).reduce((sum, amount) => sum + amount, 0))}
                 </div>
               </div>
             </div>
 
             {/* Total Prize Pool vs Calculated Payouts */}
-            <div className="pt-3 border-t border-gray-200">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-2 gap-5">
                 <div className="text-center">
-                  <span className="text-sm font-semibold text-gray-800">Total Prize Pool:</span>
-                  <div className="text-base font-bold text-green-600">
+                  <span className="text-base font-semibold text-gray-800">Total Prize Pool:</span>
+                  <div className="text-lg font-bold text-green-600">
                     {formatCurrency(parseFloat(managerEntryFee || '0') * parseInt(totalManagers || '0'))}
                   </div>
                 </div>
                 
                 <div className="text-center">
-                  <span className="text-sm font-semibold text-gray-800">Calculated Payouts:</span>
-                  <div className="text-base font-bold text-blue-600">
+                  <span className="text-base font-semibold text-gray-800">Calculated Payouts:</span>
+                  <div className="text-lg font-bold text-blue-600">
                     {formatCurrency(getTotalPayouts())}
                   </div>
                 </div>
               </div>
               
               {isEditMode && (
-                <div className="mt-2 text-xs text-center">
+                <div className="mt-3 text-sm text-center">
                   {(() => {
                     const totalPrizePool = parseFloat(managerEntryFee || '0') * parseInt(totalManagers || '0');
                     const calculatedPayouts = getTotalPayouts();
@@ -1599,9 +2954,9 @@ export default function AdminTab() {
           </div>
 
           {/* Score & Strike Rollover Rules */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">Score & Strike Rollover Rules</h4>
-            <div className="text-xs text-blue-700 space-y-1">
+          <div className="mt-5 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="text-base font-medium text-blue-800 mb-3">Score & Strike Rollover Rules</h4>
+            <div className="text-sm text-blue-700 space-y-2">
               <div>• Weekly prize pool: {formatCurrency((isEditMode ? editablePayouts : payoutStructure).scoreNStrike)} per week</div>
               <div>• Predict score + goalscorer correctly to win</div>
               <div>• Multiple winners: share pot equally</div>
@@ -1612,11 +2967,11 @@ export default function AdminTab() {
 
           {/* Confirmed Configuration Display */}
           {isConfirmed && !isEditMode && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mt-5 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-medium text-green-800 mb-1">✅ Configuration Confirmed</h4>
-                  <div className="text-xs text-green-700 space-y-1">
+                  <h4 className="text-base font-medium text-green-800 mb-2">✅ Configuration Confirmed</h4>
+                  <div className="text-sm text-green-700 space-y-2">
                     <div>• League configuration and payout structure saved</div>
                     <div>• All calculations locked and ready for distribution</div>
                     <div>• Click pencil icon above to make changes</div>
@@ -1624,7 +2979,7 @@ export default function AdminTab() {
                 </div>
                 <button
                   onClick={handleEditAfterConfirm}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
                   title="Edit payout structure"
                 >
                   ✏️ Edit
@@ -1657,7 +3012,7 @@ export default function AdminTab() {
           )}
 
           {/* Cancel Configuration Button - Only show when adding a new league */}
-          {currentPage === 'payoutStructure' && newLeagueId && (
+          {currentPage === 'leagueConfiguration' && newLeagueId && (
             <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
               <button
                 onClick={() => {
@@ -1670,7 +3025,7 @@ export default function AdminTab() {
                   
                   if (proceed) {
                     // Reset to league verification screen
-                    setCurrentPage('addLeague');
+                    setCurrentPage('leagueConfiguration');
                     setNewLeagueId('');
                     setNewLeagueName('');
                     setLeagueVerificationError(null);
@@ -1699,4 +3054,4 @@ function getOrdinalSuffix(num: number): string {
   if (j === 2 && k !== 12) return 'nd';
   if (j === 3 && k !== 13) return 'rd';
   return 'th';
-} 
+}

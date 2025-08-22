@@ -37,6 +37,18 @@ export interface GameweekSummary {
   topScorer: string;
 }
 
+export interface WeeklyWinner {
+  id?: number;
+  gameweek: number;
+  name: string;
+  managerName: string;
+  managerFplId: number;
+  managerScore: number;
+  isCurrent: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface LeagueStanding {
   id?: number;
   userId: string;
@@ -111,6 +123,15 @@ export interface AdminConfig {
   updatedAt?: Date;
 }
 
+export interface HeadsUpConfig {
+  id?: number;
+  entryAmount: number;
+  managers: number[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt?: Date;
+}
+
 export interface LeagueInfo {
   id?: number;
   leagueId: number;
@@ -158,6 +179,7 @@ class FPLDatabase extends Dexie {
   users!: Table<User>;
   predictions!: Table<Prediction>;
   gameweekSummaries!: Table<GameweekSummary>;
+  weeklyWinners!: Table<WeeklyWinner>;
   leagueStandings!: Table<LeagueStanding>;
   scoreStrikeEntries!: Table<ScoreStrikeEntry>;
   scoreStrikePots!: Table<ScoreStrikePot>;
@@ -166,21 +188,24 @@ class FPLDatabase extends Dexie {
   leagueInfos!: Table<LeagueInfo>;
   matchResults!: Table<MatchResult>;
   goalscorers!: Table<Goalscorer>;
+  headsUpConfigs!: Table<HeadsUpConfig>;
 
   constructor() {
     super('FPLDatabase');
-    this.version(10).stores({
+    this.version(13).stores({
       users: '++id, uid, email',
       predictions: '++id, userId, gameweek, [userId+gameweek], submittedAt',
       gameweekSummaries: '++id, gameweek, isActive',
+      weeklyWinners: '++id, gameweek, managerFplId, [gameweek+managerFplId], isCurrent',
       leagueStandings: '++id, userId, gameweek, [userId+gameweek], rank',
-      scoreStrikeEntries: '++id, fplleague_id, manager_email, manager_fplid, manager_scrname, fixture_id, gameweek, [manager_email+fixture_id+gameweek], submitted_timestamp',
+      scoreStrikeEntries: '++id, fplleague_id, manager_email, manager_fplid, fixture_id, gameweek, [manager_email+fixture_id+gameweek], [fixture_id+gameweek], submitted_timestamp',
       scoreStrikePots: '++id, fplleague_id, gameweek, is_active, [fplleague_id+gameweek]',
       scoreStrikeWinners: '++id, fplleague_id, gameweek, fixture_id, manager_email, [fplleague_id+gameweek]',
       adminConfigs: '++id, adminId, timestamp, isConfirmed, leagueId, updatedAt',
       leagueInfos: '++id, leagueId, leagueName, leagueAdmin, adminId, isCreated, createdAt, updatedAt',
       matchResults: '++id, fixtureId, gameweek, homeTeamId, awayTeamId, [gameweek+fixtureId]',
-      goalscorers: '++id, matchResultId, playerId, teamId'
+      goalscorers: '++id, matchResultId, playerId, teamId',
+      headsUpConfigs: '++id, entryAmount, managers, isActive, createdAt, updatedAt'
     });
   }
 }
@@ -494,6 +519,110 @@ export const dbUtils = {
     return await db.goalscorers.where('matchResultId').anyOf(matchIds).toArray();
   },
 
+  // Weekly Winner operations
+  async saveWeeklyWinner(weeklyWinner: WeeklyWinner): Promise<number> {
+    const existing = await db.weeklyWinners
+      .where('[gameweek+managerFplId]')
+      .equals([weeklyWinner.gameweek, weeklyWinner.managerFplId])
+      .first();
+    
+    if (existing) {
+      return await db.weeklyWinners.update(existing.id!, {
+        ...weeklyWinner,
+        updatedAt: new Date()
+      });
+    }
+    
+    return await db.weeklyWinners.add(weeklyWinner) as number;
+  },
+
+  async getWeeklyWinnersByGameweek(gameweek: number): Promise<WeeklyWinner[]> {
+    return await db.weeklyWinners.where('gameweek').equals(gameweek).toArray();
+  },
+
+  async getAllWeeklyWinners(): Promise<WeeklyWinner[]> {
+    return await db.weeklyWinners.toArray();
+  },
+
+  async deleteWeeklyWinnersByGameweek(gameweek: number): Promise<void> {
+    try {
+      const deletedCount = await db.weeklyWinners.where('gameweek').equals(gameweek).delete();
+      console.log(`🗑️ Deleted ${deletedCount} weekly winner entries for gameweek ${gameweek}`);
+    } catch (error) {
+      console.error('❌ Error deleting weekly winners by gameweek:', error);
+      throw error;
+    }
+  },
+
+  async markAllWeeklyWinnersAsNotCurrent(): Promise<void> {
+    try {
+      const currentWinners = await db.weeklyWinners.filter(winner => winner.isCurrent).toArray();
+      for (const winner of currentWinners) {
+        await db.weeklyWinners.update(winner.id!, { 
+          isCurrent: false, 
+          updatedAt: new Date() 
+        });
+      }
+      console.log(`🔄 Marked ${currentWinners.length} weekly winner entries as not current`);
+    } catch (error) {
+      console.error('❌ Error marking weekly winners as not current:', error);
+      throw error;
+    }
+  },
+
+  async getCurrentWeeklyWinners(): Promise<WeeklyWinner[]> {
+    return await db.weeklyWinners.filter(winner => winner.isCurrent).toArray();
+  },
+
+  async getWeeklyWinnerByManagerAndGameweek(managerFplId: number, gameweek: number): Promise<WeeklyWinner | undefined> {
+    return await db.weeklyWinners
+      .where('[gameweek+managerFplId]')
+      .equals([gameweek, managerFplId])
+      .first();
+  },
+
+  async updateWeeklyWinnersForNewGameweek(newGameweek: number, newGameweekName: string, leagueStandings: any[]): Promise<void> {
+    try {
+      // First, mark all existing current weekly winners as not current
+      const currentWinners = await db.weeklyWinners.filter(winner => winner.isCurrent).toArray();
+      for (const winner of currentWinners) {
+        await db.weeklyWinners.update(winner.id!, { isCurrent: false, updatedAt: new Date() });
+      }
+
+      // Create new weekly winner entries for all managers in the new gameweek
+      const weeklyWinnerEntries: WeeklyWinner[] = leagueStandings.map(standing => ({
+        gameweek: newGameweek,
+        name: newGameweekName,
+        managerName: standing.player_name,
+        managerFplId: standing.entry,
+        managerScore: standing.event_total,
+        isCurrent: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      // Save all new entries
+      for (const entry of weeklyWinnerEntries) {
+        await this.saveWeeklyWinner(entry);
+      }
+
+      console.log(`✅ Created ${weeklyWinnerEntries.length} weekly winner entries for Gameweek ${newGameweek}`);
+    } catch (error) {
+      console.error('❌ Error updating weekly winners for new gameweek:', error);
+      throw error;
+    }
+  },
+
+  async updateWeeklyWinnerScore(managerFplId: number, gameweek: number, newScore: number): Promise<void> {
+    const existing = await this.getWeeklyWinnerByManagerAndGameweek(managerFplId, gameweek);
+    if (existing) {
+      await db.weeklyWinners.update(existing.id!, {
+        managerScore: newScore,
+        updatedAt: new Date()
+      });
+    }
+  },
+
   async saveMatchData(matchData: MatchData): Promise<{ matchResultId: number; goalscorerIds: number[] }> {
     // Save match result first
     const matchResultId = await this.saveMatchResult(matchData.matchResult);
@@ -520,6 +649,52 @@ export const dbUtils = {
       .delete();
   },
 
+  // Heads Up Configuration functions
+  async saveHeadsUpConfig(config: HeadsUpConfig): Promise<number> {
+    try {
+      // If there's an existing active config, deactivate it
+      const existingActive = await db.headsUpConfigs.filter(config => config.isActive).first();
+      if (existingActive) {
+        await db.headsUpConfigs.update(existingActive.id!, { isActive: false });
+      }
+      
+      // Save new config
+      const id = await db.headsUpConfigs.add({
+        ...config,
+        updatedAt: new Date()
+      }) as number;
+      
+      console.log('✅ Heads Up configuration saved:', { id, config });
+      return id;
+    } catch (error) {
+      console.error('❌ Error saving Heads Up configuration:', error);
+      throw error;
+    }
+  },
+
+  async getHeadsUpConfig(): Promise<HeadsUpConfig | undefined> {
+    try {
+      const config = await db.headsUpConfigs.filter(config => config.isActive).first();
+      return config;
+    } catch (error) {
+      console.error('❌ Error getting Heads Up configuration:', error);
+      return undefined;
+    }
+  },
+
+  async updateHeadsUpConfig(id: number, updates: Partial<HeadsUpConfig>): Promise<void> {
+    try {
+      await db.headsUpConfigs.update(id, {
+        ...updates,
+        updatedAt: new Date()
+      });
+      console.log('✅ Heads Up configuration updated:', { id, updates });
+    } catch (error) {
+      console.error('❌ Error updating Heads Up configuration:', error);
+      throw error;
+    }
+  },
+
   // Function to clear all database data (useful for version conflicts)
   async clearAllData(): Promise<void> {
     console.log('🗑️ Clearing all database data...');
@@ -528,6 +703,7 @@ export const dbUtils = {
         db.users, 
         db.predictions, 
         db.gameweekSummaries, 
+        db.weeklyWinners,
         db.leagueStandings, 
         db.scoreStrikeEntries, 
         db.scoreStrikePots,
@@ -535,11 +711,13 @@ export const dbUtils = {
         db.adminConfigs,
         db.leagueInfos,
         db.matchResults,
-        db.goalscorers
+        db.goalscorers,
+        db.headsUpConfigs
       ], async () => {
         await db.users.clear();
         await db.predictions.clear();
         await db.gameweekSummaries.clear();
+        await db.weeklyWinners.clear();
         await db.leagueStandings.clear();
         await db.scoreStrikeEntries.clear();
         await db.scoreStrikePots.clear();
@@ -548,6 +726,7 @@ export const dbUtils = {
         await db.leagueInfos.clear();
         await db.matchResults.clear();
         await db.goalscorers.clear();
+        await db.headsUpConfigs.clear();
       });
       console.log('✅ Database data cleared successfully');
     } catch (error) {

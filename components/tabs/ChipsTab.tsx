@@ -129,7 +129,7 @@ export default function ChipsTab() {
             <p className="text-lg font-semibold text-red-600">{error}</p>
             <button 
               onClick={fetchChipUsage}
-              className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-lg hover:opacity-80 transition-colors"
             >
               Retry
             </button>

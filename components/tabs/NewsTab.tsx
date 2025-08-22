@@ -92,7 +92,7 @@ export default function NewsTab() {
               <span className="text-[var(--color-error)] text-2xl">!</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">Failed to Load News</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Failed to Load News</h3>
               <p className="text-[var(--color-text-secondary)] text-sm mb-4">{error}</p>
               <Button onClick={fetchNews} variant="outline" size="sm">
                 Try Again
@@ -113,7 +113,7 @@ export default function NewsTab() {
               <span className="text-[var(--color-info)] text-2xl">📰</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white mb-2">No News Available</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">No News Available</h3>
               <p className="text-[var(--color-text-secondary)] text-sm">
                 Check back later for the latest FPL updates and announcements.
               </p>
@@ -143,7 +143,7 @@ export default function NewsTab() {
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <CardTitle size="lg" className="text-white mb-2">
+                  <CardTitle size="lg" className="text-[var(--color-text-primary)] mb-2">
                     {item.title}
                   </CardTitle>
                   <div className="flex items-center gap-3 text-sm">

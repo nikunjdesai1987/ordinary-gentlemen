@@ -230,7 +230,7 @@ class FPLApiService {
         console.log('👥 League members found:', result.standings.results.length);
         console.log('📋 First 3 members:', result.standings.results.slice(0, 3).map((m: any) => ({
           entry: m.entry,
-          player_name: `${m.player_first_name} ${m.player_last_name}`,
+          player_name: m.player_name,
           entry_name: m.entry_name,
           rank: m.rank
         })));
@@ -301,7 +301,7 @@ class FPLApiService {
       // Process each manager
       for (const manager of managers.slice(0, 10)) { // Limit to top 10 managers for performance
         const managerId = manager.entry;
-        const managerName = `${manager.player_first_name} ${manager.player_last_name}`;
+        const managerName = manager.player_name;
         const teamName = manager.entry_name;
         
         // Check each finished gameweek for chip usage

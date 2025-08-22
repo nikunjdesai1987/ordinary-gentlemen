@@ -118,14 +118,14 @@ export default function MatchDataDisplay({ gameweek }: MatchDataDisplayProps) {
           <button
             onClick={fetchMatchData}
             disabled={loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-info)] text-[var(--color-primary-contrast)] rounded hover:opacity-80 disabled:opacity-50"
           >
             {loading ? 'Loading...' : 'Refresh'}
           </button>
           <button
             onClick={storeMatchData}
             disabled={loading}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--color-success)] text-[var(--color-primary-contrast)] rounded hover:opacity-80 disabled:opacity-50"
           >
             {loading ? 'Storing...' : 'Fetch & Store'}
           </button>
@@ -155,7 +155,7 @@ export default function MatchDataDisplay({ gameweek }: MatchDataDisplayProps) {
           <div key={match.matchResult.fixtureId} className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-3">
-                <span className={`px-2 py-1 text-xs text-white rounded ${getStatusColor(match.matchResult)}`}>
+                <span className={`px-2 py-1 text-xs text-[var(--color-primary-contrast)] rounded ${getStatusColor(match.matchResult)}`}>
                   {getMatchStatus(match.matchResult)}
                 </span>
                 <span className="text-sm text-gray-600">

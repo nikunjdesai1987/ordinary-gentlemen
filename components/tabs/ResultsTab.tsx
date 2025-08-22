@@ -40,7 +40,7 @@ export default function ResultsTab() {
                   'flex items-center justify-center gap-3 w-full sm:w-auto rounded-lg sm:rounded-xl py-4 sm:py-4 lg:py-5 px-4 sm:px-6 text-sm sm:text-base font-semibold leading-5 transition-all duration-300 flex-shrink-0 touch-target',
                   'ring-white ring-opacity-60 ring-offset-1 sm:ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
                   selected
-                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-xl scale-105'
+                    ? 'bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-info)] text-[var(--color-primary-contrast)] shadow-xl scale-105'
                     : 'text-gray-600 hover:bg-white hover:text-gray-800 hover:shadow-md hover:scale-102'
                 )
               }

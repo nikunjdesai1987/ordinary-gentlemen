@@ -122,7 +122,7 @@ export default function ScoreStrikeResultsTab() {
         <p className="text-sm text-gray-600 mt-2">Please try refreshing the page</p>
         <button 
           onClick={fetchScoreStrikeResults}
-          className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-lg hover:opacity-80 transition-colors"
         >
           Retry
         </button>
@@ -135,7 +135,7 @@ export default function ScoreStrikeResultsTab() {
       
       <div className="flex flex-col gap-0.5 max-h-[calc(100vh-300px)] overflow-y-auto border border-gray-200 rounded-xl">
         {/* Header */}
-        <div className="grid grid-cols-[80px_1fr_120px_1fr_1fr_1fr_1fr_120px] gap-3 p-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
+        <div className="grid grid-cols-[80px_1fr_120px_1fr_1fr_1fr_1fr_120px] gap-3 p-4 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-info)] text-[var(--color-primary-contrast)] rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
           <span>GW</span>
           <span>Fixture</span>
           <span>Final Score</span>

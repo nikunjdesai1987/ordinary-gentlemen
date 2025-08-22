@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Tab } from '@headlessui/react'
 import { 
@@ -8,7 +8,8 @@ import {
   PlayIcon, 
   TrophyIcon, 
   ChartBarIcon, 
-  Cog6ToothIcon 
+  Cog6ToothIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline'
 import { Button } from './ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card'
@@ -16,15 +17,34 @@ import NewsTab from './tabs/NewsTab'
 import ScoreStrikeTab from './tabs/ScoreStrikeTab'
 import ResultsTab from './tabs/ResultsTab'
 import StatisticsTab from './tabs/StatisticsTab'
+import HeadsUpTab from './tabs/HeadsUpTab'
 import AdminTab from './tabs/AdminTab'
+import { dbUtils } from '../lib/database'
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ')
 }
 
 export default function Dashboard() {
-  const { user, logout, isWhitelisted, isAdmin } = useAuth()
+  const { user, logout, isWhitelisted, isAdmin, managerFplId } = useAuth()
   const [selectedTab, setSelectedTab] = useState(0)
+  const [headsUpConfig, setHeadsUpConfig] = useState<any>(null)
+
+  // Load heads up configuration to determine if user should see Heads Up tab
+  useEffect(() => {
+    const loadHeadsUpConfig = async () => {
+      if (managerFplId && isWhitelisted) {
+        try {
+          const config = await dbUtils.getHeadsUpConfig();
+          setHeadsUpConfig(config);
+        } catch (error) {
+          console.error('Error loading heads up config:', error);
+        }
+      }
+    };
+
+    loadHeadsUpConfig();
+  }, [managerFplId, isWhitelisted]);
 
   // Define tabs based on user permissions
   const tabs = [
@@ -62,6 +82,17 @@ export default function Dashboard() {
         phoneName: 'Stats',
         alwaysVisible: false 
       },
+      // Heads Up tab - only show if user is in heads up configuration
+      ...(headsUpConfig && headsUpConfig.managers.includes(managerFplId) ? [
+        { 
+          name: 'Heads Up', 
+          icon: UserGroupIcon, 
+          component: HeadsUpTab, 
+          mobileName: 'Heads', 
+          phoneName: 'Heads',
+          alwaysVisible: false 
+        }
+      ] : []),
     ] : []),
     // Admin tab (only for whitelisted admin users)
     ...(isWhitelisted && isAdmin ? [
@@ -106,7 +137,7 @@ export default function Dashboard() {
               <>
                 <div className="hidden sm:flex items-center gap-3 text-sm">
                   <span className="text-[var(--color-text-secondary)]">Welcome,</span>
-                  <span className="font-medium text-white truncate max-w-[120px]">
+                  <span className="font-medium text-[var(--color-text-primary)] truncate max-w-[120px]">
                     {user.displayName || user.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
@@ -139,36 +170,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 safe-area-inset">
-        {/* Debug Info - Only in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card className="mb-6 bg-[var(--pl-surface)]/50">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-[var(--color-text-secondary)]">User:</span>
-                  <span className="text-white ml-2">{user?.email || 'None'}</span>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-secondary)]">Whitelisted:</span>
-                  <span className={`ml-2 ${isWhitelisted ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
-                    {isWhitelisted ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-secondary)]">Admin:</span>
-                  <span className={`ml-2 ${isAdmin ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]'}`}>
-                    {isAdmin ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[var(--color-text-secondary)]">Tabs:</span>
-                  <span className="text-white ml-2">{tabs.length}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Tab Navigation */}
         <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
           {/* Desktop Tab List */}
@@ -182,7 +183,7 @@ export default function Dashboard() {
                     'ring-white ring-opacity-60 ring-offset-2 ring-offset-[var(--color-primary)] focus:outline-none focus:ring-2',
                     selected
                       ? 'bg-gradient-to-r from-[var(--pl-neon)] to-[var(--pl-cyan)] text-[var(--color-primary-contrast)] shadow-lg'
-                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.12] hover:text-white'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[rgba(0,212,163,0.08)] hover:text-[var(--color-text-primary)]'
                   )
                 }
               >
@@ -203,8 +204,8 @@ export default function Dashboard() {
                   classNames(
                     'flex flex-col items-center justify-center gap-2 px-3 py-4 text-sm font-semibold transition-all duration-300 border-b-2 relative overflow-hidden whitespace-nowrap flex-shrink-0 min-w-[80px] touch-target',
                     selected
-                      ? 'text-white bg-gradient-to-r from-[var(--pl-neon)] to-[var(--pl-cyan)] border-[var(--pl-cyan)] shadow-lg'
-                      : 'text-[var(--color-text-secondary)] hover:bg-white/[0.12] hover:text-white border-transparent'
+                      ? 'text-[var(--color-primary-contrast)] bg-gradient-to-r from-[var(--pl-neon)] to-[var(--pl-cyan)] border-[var(--pl-cyan)] shadow-lg'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[rgba(0,212,163,0.08)] hover:text-[var(--color-text-primary)] border-transparent'
                   )
                 }
               >

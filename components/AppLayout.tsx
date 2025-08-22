@@ -38,7 +38,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] text-white">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)]">
       {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md supports-backdrop:bg-[rgba(56,0,60,0.8)] border-b border-[color:var(--pl-border)]">
         <div className="container mx-auto px-4 h-14 flex items-center justify-between">
@@ -46,7 +46,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-[rgba(0,212,163,0.08)] transition-colors"
             >
               {mobileMenuOpen ? (
                 <XMarkIcon className="h-6 w-6" />
@@ -65,13 +65,13 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
           </div>
 
           {/* Center: Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm text-muted">
+          <nav className="hidden lg:flex items-center gap-6 text-sm text-[var(--pl-muted)]">
             {navigation.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
-                className={`hover:text-white transition-colors ${
-                  currentTab === item.name.toLowerCase() ? 'text-white font-semibold' : ''
+                className={`hover:text-[var(--color-text-primary)] transition-colors ${
+                  currentTab === item.name.toLowerCase() ? 'text-[var(--color-text-primary)] font-semibold' : ''
                 }`}
               >
                 {item.name}
@@ -84,8 +84,8 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
             {user && (
               <>
                 <div className="hidden sm:flex items-center gap-2 text-sm">
-                  <span className="text-muted">Welcome,</span>
-                  <span className="font-medium text-white truncate max-w-[120px]">
+                  <span className="text-[var(--pl-muted)]">Welcome,</span>
+                  <span className="font-medium text-[var(--color-text-primary)] truncate max-w-[120px]">
                     {user.displayName || user.email?.split('@')[0] || 'User'}
                   </span>
                 </div>
@@ -110,7 +110,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm">
-          <div className="fixed inset-y-0 left-0 w-64 bg-[var(--pl-surface)] border-r border-[color:var(--pl-border)] p-6">
+                            <div className="fixed inset-y-0 left-0 w-64 bg-[var(--color-surface)] border-r border-[color:var(--pl-border)] p-6">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[var(--pl-magenta)] to-[var(--pl-cyan)] flex items-center justify-center">
@@ -120,7 +120,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="p-2 rounded-lg hover:bg-[rgba(0,212,163,0.08)] transition-colors"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
@@ -134,7 +134,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
                   className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
                     currentTab === item.name.toLowerCase() 
                       ? 'bg-primary text-[color:var(--color-primary-contrast)]' 
-                      : 'text-muted hover:text-white hover:bg-white/5'
+                      : 'text-[var(--pl-muted)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(0,212,163,0.08)]'
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -153,7 +153,7 @@ export default function AppLayout({ children, currentTab = 'home' }: AppLayoutPr
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-[color:var(--pl-border)] bg-[rgba(27,16,32,0.95)] backdrop-blur-md safe-area-bottom">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-50 border-t border-[color:var(--pl-border)] bg-[rgba(255,255,255,0.95)] backdrop-blur-md safe-area-bottom">
         <div className="grid grid-cols-5 h-16 text-xs">
           {navigation.map((item) => (
             <button

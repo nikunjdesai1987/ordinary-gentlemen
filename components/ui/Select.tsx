@@ -28,8 +28,8 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           className={cn(
             'w-full px-4 py-3 bg-[var(--color-surface)] border border-[color:var(--pl-border)] rounded-lg',
-            'text-white placeholder:text-[var(--color-text-secondary)]',
-            'focus:outline-none focus:ring-2 focus:ring-[var(--pl-neon)] focus:border-[var(--pl-neon)]',
+            'text-[var(--color-text-primary)] placeholder:text-[var(--color-text-secondary)]',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]',
             'transition-all duration-200',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error && 'border-[var(--color-error)] focus:ring-[var(--color-error)] focus:border-[var(--color-error)]',

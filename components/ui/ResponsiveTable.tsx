@@ -41,7 +41,7 @@ export function ResponsiveTable({
                     key={column}
                     className={cn(
                       'cursor-pointer select-none transition-colors',
-                      sortable && 'hover:bg-white/5'
+                      sortable && 'hover:bg-[rgba(0,212,163,0.08)]'
                     )}
                     onClick={() => sortable && handleSort(column)}
                   >
@@ -63,7 +63,7 @@ export function ResponsiveTable({
                   key={index}
                   className={cn(
                     'cursor-pointer transition-colors',
-                    onRowClick && 'hover:bg-white/5'
+                    onRowClick && 'hover:bg-[rgba(0,212,163,0.08)]'
                   )}
                   onClick={() => onRowClick?.(row)}
                 >
@@ -86,7 +86,7 @@ export function ResponsiveTable({
             key={index}
             className={cn(
               'card p-4 space-y-3 cursor-pointer transition-all duration-200',
-              onRowClick && 'hover:bg-white/5 hover:scale-[1.02]'
+              onRowClick && 'hover:bg-[rgba(0,212,163,0.08)] hover:scale-[1.02]'
             )}
             onClick={() => onRowClick?.(row)}
           >

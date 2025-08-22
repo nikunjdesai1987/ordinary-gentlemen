@@ -7,12 +7,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-[color:var(--color-primary-contrast)] hover:opacity-90 active:opacity-80 shadow-card',
-        secondary: 'bg-secondary text-white hover:shadow-magenta-glow',
-        ghost: 'bg-transparent text-white border border-[color:var(--pl-border)] hover:bg-[rgba(255,255,255,.06)] hover:border-white/20',
-        outline: 'bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-[color:var(--color-primary-contrast)] hover:shadow-neon-glow',
-        danger: 'bg-danger text-white hover:opacity-90 active:opacity-80',
-        success: 'bg-success text-[color:var(--color-primary-contrast)] hover:opacity-90 active:opacity-80',
+        primary: 'bg-primary text-[color:var(--color-primary-contrast)] hover:opacity-90 active:opacity-80 shadow-card hover:shadow-lg',
+        secondary: 'bg-secondary text-white hover:opacity-90 active:opacity-80 shadow-card hover:shadow-lg',
+        ghost: 'bg-transparent text-[color:var(--color-text-primary)] border border-[color:var(--pl-border)] hover:bg-[rgba(0,212,163,.08)] hover:border-primary',
+        outline: 'bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-[color:var(--color-primary-contrast)] hover:shadow-lg',
+        danger: 'bg-danger text-white hover:opacity-90 active:opacity-80 shadow-card hover:shadow-lg',
+        success: 'bg-success text-[color:var(--color-primary-contrast)] hover:opacity-90 active:opacity-80 shadow-card hover:shadow-lg',
       },
       size: {
         sm: 'px-4 py-2 text-sm',

@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#38003C',
+  themeColor: '#00D4A3',
 }
 
 export default function RootLayout({
@@ -55,7 +55,7 @@ export default function RootLayout({
         
         {/* PWA Meta Tags */}
         <meta name="application-name" content="Ordinary Gentlemen" />
-        <meta name="msapplication-TileColor" content="#38003C" />
+        <meta name="msapplication-TileColor" content="#00D4A3" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className={`${inter.className} h-full bg-[var(--color-bg)] text-[var(--color-text-primary)]`}>

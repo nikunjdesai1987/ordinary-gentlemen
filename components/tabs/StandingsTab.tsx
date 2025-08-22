@@ -6,8 +6,7 @@ import { fplApi } from '@/lib/fpl-api';
 interface LeagueStanding {
   id: number;
   entry_name: string;
-  player_first_name: string;
-  player_last_name: string;
+  player_name: string;
   total: number;
   event_total: number;
   rank: number;
@@ -70,7 +69,7 @@ export default function StandingsTab() {
         <p className="text-sm text-gray-600 mt-2">Please try refreshing the page</p>
         <button 
           onClick={() => window.location.reload()} 
-          className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+          className="mt-4 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-contrast)] rounded-lg hover:opacity-80 transition-colors"
         >
           Refresh Page
         </button>
@@ -106,22 +105,19 @@ export default function StandingsTab() {
       
       <div className="flex flex-col gap-0.5 max-h-[calc(100vh-300px)] overflow-y-auto border border-gray-200 rounded-xl">
         {/* Header */}
-        <div className="grid grid-cols-[60px_1fr_150px_80px_80px_80px_80px_60px] gap-2 p-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
+        <div className="grid grid-cols-[80px_1fr_200px_100px_100px] gap-3 p-3 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-info)] text-[var(--color-primary-contrast)] rounded-t-xl text-sm font-bold sticky top-0 z-10 shadow-lg">
           <span>Rank</span>
           <span>Manager Name</span>
           <span>Team Name</span>
-          <span className="text-center">GW Pts</span>
-          <span className="text-center">Total Pts</span>
-          <span className="text-center">Transfers</span>
-          <span className="text-center">Value</span>
-          <span className="text-center">Bank</span>
+          <span className="text-center">GW Total</span>
+          <span className="text-center">Total</span>
         </div>
         
         {/* Rows */}
         {standings.map((standing, index) => (
           <div 
             key={standing.id}
-            className={`grid grid-cols-[60px_1fr_150px_80px_80px_80px_80px_60px] gap-2 p-2.5 items-center border-b border-gray-200 transition-all duration-300 hover:bg-gray-50 ${
+            className={`grid grid-cols-[80px_1fr_200px_100px_100px] gap-3 p-2.5 items-center border-b border-gray-200 transition-all duration-300 hover:bg-gray-50 ${
               index === standings.length - 1 ? 'rounded-b-xl' : ''
             }`}
           >
@@ -129,7 +125,7 @@ export default function StandingsTab() {
               {standing.rank}
             </span>
             <span className="font-semibold text-gray-800 text-sm">
-              {`${standing.player_first_name} ${standing.player_last_name}`}
+              {standing.player_name}
             </span>
             <span className="font-semibold text-gray-800 text-sm">
               {standing.entry_name}
@@ -139,15 +135,6 @@ export default function StandingsTab() {
             </span>
             <span className="font-bold text-primary-600 text-center text-sm">
               {standing.total.toLocaleString()}
-            </span>
-            <span className="font-semibold text-gray-600 text-center text-sm">
-              {standing.event_transfers}
-            </span>
-            <span className="font-semibold text-gray-600 text-center text-sm">
-              £{(standing.value / 10).toFixed(1)}M
-            </span>
-            <span className="font-semibold text-gray-600 text-center text-sm">
-              £{(standing.bank / 10).toFixed(1)}M
             </span>
           </div>
         ))}
